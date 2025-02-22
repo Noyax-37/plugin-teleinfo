@@ -116,7 +116,7 @@ class Ftdi(object):
         logging.info("Try to open ftdi port")
         err = ftdi.ftdi_usb_open(self.__ftdic, usb_vendor, usb_product)
         if err < 0:
-            logging.error(f"MODEM_2cpt------Can't open usb ({err}, {}ftdi.ftdi_get_error_string(self.__ftdic))")
+            logging.error(f"MODEM_2cpt------Can't open usb ({err}, {ftdi.ftdi_get_error_string(self.__ftdic)})")
             raise FtdiError(f"Can't open usb ({err}, {ftdi.ftdi_get_error_string(self.__ftdic)})")
 
         err = ftdi.ftdi_set_baudrate(self.__ftdic, int(globals.vitesse))
