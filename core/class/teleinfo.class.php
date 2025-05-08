@@ -48,7 +48,7 @@ class teleinfo extends eqLogic
 
     // Fonction pour exclure un sous répertoire de la sauvegarde
     public static function backupExclude() {
-		return ['ressources/venv'];
+		return ['resources/venv'];
 	}
 
     public static function changeLogLive($level)
@@ -247,6 +247,7 @@ class teleinfo extends eqLogic
                 case "RELAIS06":
                 case "RELAIS07":
                 case "RELAIS08":
+                case "VTIC":
                     $cmd->setSubType('string')
                             ->setDisplay('generic_type', 'GENERIC_INFO');
                     break;
@@ -327,7 +328,7 @@ class teleinfo extends eqLogic
     public static function runDeamon($debug = false, $type = 'conso', $mqtt = false)
     {
         $pidFile = jeedom::getTmpFolder('teleinfo') . '/teleinfo';
-        $teleinfoPath         	  = realpath(dirname(__FILE__) . '/../../ressources');
+        $teleinfoPath         	  = realpath(dirname(__FILE__) . '/../../resources');
         $activation_Modem = (config::byKey('activation_Modem', 'teleinfo') == "") ? 1 : config::byKey('activation_Modem', 'teleinfo');
         if ($activation_Modem==''){
             $activation_Modem = 1;
@@ -355,6 +356,10 @@ class teleinfo extends eqLogic
                                 log::add('teleinfo', 'error', '[TELEINFO]-----[' . $type . '] Le port1 '. $port . ' n\'existe pas');
                                 return false;
                             }
+                        } else {
+                            log::add('teleinfo', 'error', '[TELEINFO]-----[' . $type . '] Le port1 n\'est pas configuré');
+                            log::add('teleinfo', 'error', '[TELEINFO]----- Le démon ' . $type . ' ne sera pas lancé');
+                            return false;
                         }
                     }
                 }
@@ -376,6 +381,10 @@ class teleinfo extends eqLogic
                                 log::add('teleinfo', 'error', '[TELEINFO]-----[' . $type . '] Le port2 '. $port . ' n\'existe pas');
                                 return false;
                             }
+                        } else {
+                            log::add('teleinfo', 'error', '[TELEINFO]-----[' . $type . '] Le port2 n\'est pas configuré');
+                            log::add('teleinfo', 'error', '[TELEINFO]----- Le démon ' . $type . ' ne sera pas lancé');
+                            return false;
                         }
                     }
                 }
@@ -392,11 +401,11 @@ class teleinfo extends eqLogic
                 }
             }
 
-            exec('sudo chmod 777 ' . $port . ' > /dev/null 2>&1');
+            exec('sudo chmod 777 ' . (string)$port . ' > /dev/null 2>&1');
 
 
             log::add('teleinfo', 'info', '---------- Informations de lancement ---------');
-            log::add('teleinfo', 'info', 'Port modem : ' . $port);
+            log::add('teleinfo', 'info', 'Port modem : ' . (string)$port);
             log::add('teleinfo', 'info', 'Socket : ' . $socketPort);
             log::add('teleinfo', 'info', 'Type : ' . $type);
             log::add('teleinfo', 'info', 'Mode : ' . $mode);
@@ -413,7 +422,7 @@ class teleinfo extends eqLogic
                 //$cmd          = 'nice -n 19 /usr/bin/python3 ' . $teleinfoPath . '/teleinfo.py';
                 $cmd         .= ' --type ' . $type;
             }
-            $cmd         .= ' --port ' . $port;
+            $cmd         .= ' --port ' . (string)$port;
             $cmd         .= ' --vitesse ' . $modemVitesse;
             $cmd         .= ' --apikey ' . jeedom::getApiKey('teleinfo');
             $cmd         .= ' --mode ' . $mode;
@@ -446,7 +455,7 @@ class teleinfo extends eqLogic
     
     public static function runDeamonMqtt($debug = false, $type = 'mqtt'){
   
-        $teleinfoPath   = realpath(dirname(__FILE__) . '/../../ressources');
+        $teleinfoPath   = realpath(dirname(__FILE__) . '/../../resources');
         $socketPort 	= config::byKey('socketport', 'teleinfo', '55062') + 2;
         $socketHost 	= config::byKey('socketHost', 'teleinfo', '127.0.0.1');
         $mqtt_broker 	= config::byKey('mqtt_broker', 'teleinfo', '127.0.0.1');
@@ -458,7 +467,7 @@ class teleinfo extends eqLogic
         log::add('teleinfo', 'info', '---------------------------------------------');
         log::add('teleinfo', 'info', '[MQTT] Démarrage service MQTT ');
         log::add('teleinfo', 'info', "SocketHost : " . $socketHost);
-        log::add('teleinfo', 'info', "Socketport : " . $socketport);
+        log::add('teleinfo', 'info', "Socketport : " . $socketPort);
         log::add('teleinfo', 'info', "Broker : " . $mqtt_broker);
         log::add('teleinfo', 'info', "Port du Broker : " . $mqtt_port);
         log::add('teleinfo', 'info', "topic : " . '"' . $mqtt_topic . '"');
@@ -550,12 +559,13 @@ class teleinfo extends eqLogic
         $activation_Mqtt = (config::byKey('activation_Mqtt', 'teleinfo') == "") ? 0 : config::byKey('activation_Mqtt', 'teleinfo');
         $consoPort = (config::byKey('port', 'teleinfo') == "") ? "" : config::byKey('port', 'teleinfo');
         $productionPort = (config::byKey('port_modem2', 'teleinfo') == "") ? "" : config::byKey('port_modem2', 'teleinfo');
+        $twoCptCartelectronic = config::byKey('2cpt_cartelectronic', 'teleinfo');
         if ($productionPort != ""){
             $productionActivated = 1;
         } else {
             $productionActivated = 0;
         }
-        if ($consoPort != ""){
+        if ($consoPort != "" || $twoCptCartelectronic == 1){
             $consoActivated = 1;
         } else {
             $consoActivated = 0;
@@ -568,7 +578,6 @@ class teleinfo extends eqLogic
         $returnprod = 'sans';
         if ($consoActivated == 1 && $activation_Modem==1){
             log::add('teleinfo', 'debug', '[TELEINFO_deamon_infoserial] test pid');
-            $twoCptCartelectronic = config::byKey('2cpt_cartelectronic', 'teleinfo');
             if ($twoCptCartelectronic == 1) {
                 $pidFile = jeedom::getTmpFolder('teleinfo') . '/teleinfo2cpt.pid';
             } else {
@@ -604,7 +613,12 @@ class teleinfo extends eqLogic
                 log::add('teleinfo', 'error', "[TELEINFO_deamon_infoserial] le deamon port modem 2 n'est pas démarré");
                 $returnprod = 'nok';
             }
-            }
+        }
+
+        if (($consoPort == "" && $productionPort == "") && $activation_Modem == 1){
+            log::add('teleinfo', 'error', "[TELEINFO_deamon_infoserial] Aucun port modem configuré, revoir votre config");
+            $returnmodem = 'Aucun port modem configuré';
+        }
 
         if ($activation_Mqtt==1){
             $pidFile = jeedom::getTmpFolder('teleinfo') . '/teleinfo_Mqtt.pid';
@@ -652,6 +666,7 @@ class teleinfo extends eqLogic
         $activation_Mqtt = (config::byKey('activation_Mqtt', 'teleinfo') == "") ? 0 : config::byKey('activation_Mqtt', 'teleinfo');
         $consoPort = (config::byKey('port', 'teleinfo') == "") ? "" : config::byKey('port', 'teleinfo');
         $productionPort = (config::byKey('port_modem2', 'teleinfo') == "") ? "" : config::byKey('port_modem2', 'teleinfo');
+        $configure = 0;
         if ($productionPort != ""){
             $productionActivated = 1;
         } else {
@@ -664,23 +679,29 @@ class teleinfo extends eqLogic
         }
         if ($activation_Modem == 1) {
             log::add('teleinfo', 'info', '[deamon_start_modem] Démarrage du service');
-            if (config::byKey('port', 'teleinfo') != "" || config::byKey('2cpt_cartelectronic', 'teleinfo') != "") {    // Si un port est sélectionné
+            if (config::byKey('port', 'teleinfo') != "" || config::byKey('2cpt_cartelectronic', 'teleinfo') == 1) {    // Si un port est sélectionné
                 if (!self::deamonRunning()) {
-                    log::add('teleinfo', 'info', 'Lancement compteur 1');
+                    log::add('teleinfo', 'info', 'Lancement démon pour modem 1');
                     self::runDeamon($debug, 'conso');
                 }
                 message::removeAll('teleinfo', 'noTeleinfoPort');
             } else {
-                log::add('teleinfo', 'info', 'Pas d\'informations sur le port1 USB (Modem série ?) ');
+                log::add('teleinfo', 'info', 'Port du modem1 non configuré');
+                $configure += 1;
             }
             if ($productionActivated == 1) {    // Si un port est sélectionné
                 //if (!self::deamonRunning()) {
-                    log::add('teleinfo', 'info', 'Lancement compteur 2');
+                    log::add('teleinfo', 'info', 'Lancement démon pour modem 2');
                     self::runDeamon($debug, 'prod');
                 //}
                 //message::removeAll('teleinfo', 'noTeleinfoPort');
             } else {
-                log::add('teleinfo', 'info', 'Port2 non configuré ');
+                log::add('teleinfo', 'info', 'Port du modem2 non configuré');
+                $configure += 1;
+            }
+            if ($configure == 2) {
+                log::add('teleinfo', 'error', "Aucun port modem configuré ce n'est pas normal");
+                log::add('teleinfo', 'error', "Les démons modem ne seront pas lancés");
             }
         }
         if ($activation_Mqtt == 1){
@@ -1529,7 +1550,7 @@ class teleinfo extends eqLogic
                         $statYesterdayCoutTotalIndex00Init = 0;
                     }
 
-                    log::add('teleinfo', 'debug', 'Total Cout Index ' . $i . ' hier --> ' . ${$e} . ' id numéro: ' . ${$d} . ' Index 00 ' . $statYesterdayTotalIndex00 . ' Coût Index 00 ' . $statYesterdayCoutTotalIndex00);
+                    log::add('teleinfo', 'debug', 'Total Cout Index ' . $i . ' hier --> ' . ${$e} . ' id coût index : ' . ${$d} . ' Conso index : ' . ${$c} . ' id index : ' . ${$a});
                 }
 			}
             $statYesterdayTotalIndex00 += $statYesterdayTotalIndex00Init;
@@ -1719,6 +1740,176 @@ class teleinfo extends eqLogic
         }
     log::add('teleinfo', 'info', 'other stats -------------------------------------');
 }
+
+    public static function cleanDBTeleinfo(){
+        log::add('teleinfo_clean','info', "Début de l'opération de nettoyage de la base de données.");
+        foreach (eqLogic::byType('teleinfo') as $eqLogic) {
+            if ($eqLogic->getConfiguration('cleanDBTeleinfo') == 1) {
+                log::add('teleinfo_clean', 'info', 'nettoyage compteur '. $eqLogic->getName());
+                foreach ($eqLogic->getCmd('info') as $cmd) {
+                    if ($cmd->getIsHistorized()==1){
+                        $minParHeure = array();
+                        $valuesClean = 0;
+                        $donneeOptimized = $cmd->getLogicalId(); //init('logicalid')
+                        $donneeType = $cmd->getConfiguration('type'); //init('type')
+                        $donneeId = $cmd->getId(); //init('id')
+                        $replaceValues = '';
+                        $deleteValues = '';
+                        log::add('teleinfo_clean', 'info', "Optimisation de l'historique de ".$donneeOptimized.", cela peut prendre du temps.");
+                        
+                        //compter le nb de ligne
+                        $sql = "SELECT COUNT(*) FROM historyArch WHERE cmd_id=:cmdId";
+                        $values = array(
+                            'cmdId' => $cmd->getId(),
+                        );
+                        $valeursDepartDB = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                        $valeursDepart = $valeursDepartDB['COUNT(*)'];
+                        log::add('teleinfo_clean', 'info', "Nombre d'enregistrements: " . $valeursDepart);
+
+                        $sql = 'SELECT COUNT(*) FROM historyArch WHERE cmd_id=:cmdId AND MINUTE(datetime) <> "0" AND (HOUR(datetime) <> "23" AND MINUTE(datetime) <> "59")';
+                        $values = array(
+                            'cmdId' => $cmd->getId(),
+                        );
+                        $valeursEffacerDB = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                        $valeursEffacer = $valeursEffacerDB['COUNT(*)'];
+                        log::add('teleinfo_clean', 'info', 'Enregistrements à effacer: ' . $valeursEffacer);
+
+                        if ($valeursEffacer > 1000){                      
+                            
+                            //test si on a affaire à un stat_
+                            if (strpos($donneeOptimized, 'STAT_') !== 0){
+                                //sélectionne le min par heure
+                                if ($donneeType != "AVG"){
+                                    $sql = "SELECT cmd_id,datetime,value FROM historyArch WHERE (cmd_id=:cmdId) GROUP BY YEAR(datetime),MONTH(datetime),DAY(datetime),HOUR(datetime)";
+                                }else{
+                                    $sql = "SELECT cmd_id, FROM_UNIXTIME(AVG(UNIX_TIMESTAMP(datetime))) as datetime, (CAST(value AS DECIMAL(12,2))) as value FROM historyArch WHERE (cmd_id=:cmdId) GROUP BY YEAR(datetime),MONTH(datetime),DAY(datetime),HOUR(datetime)";
+                                }
+                                $values = array(
+                                            'cmdId' => $donneeId,
+                                );
+                                $minParHeure = DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL);
+
+                                //sélectionne le max de la journée
+                                if ($donneeType != "AVG"){
+                                    $sql = "SELECT cmd_id,datetime, max(value) as value 
+                                        FROM historyArch 
+                                        WHERE (cmd_id=:cmdId) AND `datetime` < date(NOW())
+                                        GROUP BY YEAR(datetime),MONTH(datetime),DAY(datetime)";
+                                    $maxJournee = DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL);
+                                }
+
+                                log::add('teleinfo_clean', 'debug', 'Les données sont stockées dans une variable, passons à la suppression du superflu, la phase la plus longue...');
+
+                                // Nettoyage de toutes les valeurs
+                                $sql = "DELETE FROM historyArch WHERE cmd_id=:cmdId";
+                                $values = array(
+                                                'cmdId' => $donneeId,
+                                );
+                                $deleteValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                log::add('teleinfo_clean', 'debug', 'Les anciennes données sont supprimées, passons à la remise en place des valeurs stockées');
+
+                                //remise des données purgées en place
+                                $valuesClean=0;
+                                foreach ($minParHeure as $cle => $valeur) {
+                                    $sql = "REPLACE INTO historyArch SET cmd_id=:cmdId,datetime=:newDatetime,value=:newValue";
+                                    $values = array(
+                                        'cmdId' => $donneeId,
+                                        'newDatetime' => date('Y-m-d H:00:00', strtotime($valeur['datetime'])),
+                                        'newValue' => $valeur['value'],
+                                    );
+                                    $replaceValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                }
+                                if ($donneeType !== "AVG"){
+                                    foreach ($maxJournee as $cle2 => $valeur2){
+                                        $sql = "REPLACE INTO historyArch SET cmd_id=:cmdId,datetime=:newDatetime,value=:newValue";
+                                        $values = array(
+                                            'cmdId' => $donneeId,
+                                            'newDatetime' => date('Y-m-d 23:59:59', strtotime($valeur2['datetime'])),
+                                            'newValue' => $valeur2['value'],
+                                        );
+                                        $replaceValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                    }
+                                }
+                            }else{
+                                if (strpos($donneeOptimized, 'STAT_YESTERDAY') === 0){
+                                    //si on a affaire à des 'stat_yesterday' alors il ne faut garder que le max de la journée
+                                    $sql = "SELECT cmd_id,datetime,max(value) as value FROM historyArch WHERE (cmd_id=:cmdId) GROUP BY YEAR(datetime),MONTH(datetime),DAY(datetime)";
+                                    $values = array(
+                                                'cmdId' => $donneeId,
+                                    );
+                                    $minParJour = DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL);
+                                    log::add('teleinfo_clean', 'debug', 'Les données sont stockées dans une variable, passons à la suppression du superflu, la phase la plus longue...');
+                        
+                                    // Nettoyage de toutes les valeurs
+                                    $sql = "DELETE FROM historyArch WHERE cmd_id=:cmdId";
+                                    $values = array(
+                                                    'cmdId' => $donneeId,
+                                    );
+                                    $deleteValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                    log::add('teleinfo_clean', 'debug', 'Les anciennes données sont supprimées, passons à la remise en place des valeurs stockées');
+
+                                    //remise des données purgées en place
+                                    $valuesClean=0;
+                                    foreach ($minParJour as $cle => $valeur) {
+                                        $sql = "REPLACE INTO historyArch SET cmd_id=:cmdId,datetime=:newDatetime,value=:newValue";
+                                        $values = array(
+                                            'cmdId' => $donneeId,
+                                            'newDatetime' => date('Y-m-d 00:00:00', strtotime($valeur['datetime'])),
+                                            'newValue' => $valeur['value'],
+                                        );
+                                        $replaceValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                    }
+                                }else{
+                                    if (strpos($donneeOptimized, 'STAT_TODAY') === 0){
+                                        //si on a affaire à des 'stat_today' alors il ne faut garder que le max de chaque heure
+                                        $sql = "SELECT cmd_id,datetime,max(value) as value FROM historyArch WHERE (cmd_id=:cmdId) GROUP BY YEAR(datetime),MONTH(datetime),DAY(datetime),HOUR(datetime)";
+                                        $values = array(
+                                            'cmdId' => $donneeId,
+                                        );
+                                        $maxParHeure = DB::Prepare($sql, $values, DB::FETCH_TYPE_ALL);
+                                        log::add('teleinfo_clean', 'debug', 'Les données sont stockées dans une variable, passons à la suppression du superflu, la phase la plus longue...');
+                            
+                                        // Nettoyage de toutes les valeurs
+                                        $sql = "DELETE FROM historyArch WHERE cmd_id=:cmdId";
+                                        $values = array(
+                                                        'cmdId' => $donneeId,
+                                        );
+                                        $deleteValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                        log::add('teleinfo_clean', 'debug', 'Les anciennes données sont supprimées, passons à la remise en place des valeurs stockées');
+
+                                        //remise des données purgées en place
+                                        $valuesClean=0;
+                                        foreach ($maxParHeure as $cle => $valeur) {
+                                            $sql = "REPLACE INTO historyArch SET cmd_id=:cmdId,datetime=:newDatetime,value=:newValue";
+                                            $values = array(
+                                                'cmdId' => $donneeId,
+                                                'newDatetime' => date('Y-m-d H:00:00', strtotime($valeur['datetime'])),
+                                                'newValue' => $valeur['value'],
+                                            );
+                                            $replaceValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                                        }
+                                    }
+                                }
+
+                            }
+                            $sql = "SELECT COUNT(*) FROM historyArch WHERE cmd_id=:cmdId";
+                            $values = array(
+                                'cmdId' => $donneeId,
+                            );
+                            $valuesCleanDB = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+                            $valuesClean = $valuesCleanDB['COUNT(*)'];
+
+                            log::add('teleinfo_clean','info', 'Optimisation de l\'historique terminée. Les données sont remises en place. Il y avait ' . $valeursDepart . ' lignes de données avant, il en reste '.$valuesClean);
+                        }else{
+                            log::add('teleinfo_clean','info', 'Pas assez de données à supprimer => au suivant...');
+                        }
+                    }
+                }
+            }
+        }
+        log::add('teleinfo_clean','info', "Fin de l'opération de nettoyage de la base de données.");
+    }
+
     public static function copyVersIndex($compteur, $startDate, $endDate,
                                             $indexcopy01,$indexcopy02,$indexcopy03,$indexcopy04,$indexcopy05,$indexcopy06,$indexcopy07,$indexcopy08,$indexcopy09,$indexcopy10,
                                             $coutcopy00,$coutcopy01,$coutcopy02,$coutcopy03,$coutcopy04,$coutcopy05,$coutcopy06,$coutcopy07,$coutcopy08,$coutcopy09,$coutcopy10,$coutcopyprod){
@@ -2064,6 +2255,7 @@ class teleinfo extends eqLogic
 
     public static function sauveCmd($id){
         $return['erreur'] = 'nOk';
+        log::add('teleinfo', 'info', "[TELEINFO]----- début sauvegarde");
         $eqLogic = eqLogic::byId($id);
         log::add('teleinfo', 'info', "[TELEINFO]----- sauvegarde du compteur " . $eqLogic->getName() . " avec l'ID : " . $id) ;
         $indexSauve = array('BASE','EAST','EASF01','EASF03','EASF05','HCHC','BBRHCJB','BBRHCJW','BBRHCJR','EJPHN','EASF02','EASF04','EASF06','HCHP','BBRHPJB','BBRHPJW','BBRHPJR','EJPHPM','EAIT');
@@ -2137,6 +2329,7 @@ class teleinfo extends eqLogic
             $statHcToCumul       = array();
             $statProdToCumul     = array();
             $statTotalToCumul    = array();
+            $statTotal           = 0;
 
             try{
                 $cmdYesterdayHP     = $eqLogic->getCmd('info', 'STAT_YESTERDAY_HP');
@@ -2321,12 +2514,12 @@ class teleinfo extends eqLogic
                 foreach ($eqLogic->getCmd('info') as $cmd) {
                     if ($cmd->getConfiguration('type') == "data" || $cmd->getConfiguration('type') == "") {
                         if (strpos($indexConsoHP, $cmd->getConfiguration('info_conso')) !== false) {
-							log::add('teleinfo', 'debug', 'HP : ' . $cmd->getId());
                             $ppapHp += $cmd->execCmd();
+							log::add('teleinfo', 'debug', 'HP : ' . $cmd->getId() . ' Valeur: ' . $ppapHp);
                         }
                         if (strpos($indexConsoHC, $cmd->getConfiguration('info_conso')) !== false) {
-							log::add('teleinfo', 'debug', 'HC : ' . $cmd->getId());
                             $ppapHc += $cmd->execCmd();
+							log::add('teleinfo', 'debug', 'HC : ' . $cmd->getId() . ' Valeur: ' . $ppapHc);
                         }
                     }
                 }
@@ -2337,10 +2530,14 @@ class teleinfo extends eqLogic
                 $cacheHp        = $cacheHp->getValue();
                 $datetimeMesure = $datetimeMesure->getTimestamp();
                 $datetime2      = time();
-                $interval       = $datetime2 - $datetimeMesure;
-                $consoResultat  = ((($ppapHp - $cacheHp) + ($ppapHc - $cacheHc)) / $interval) * 3600;
+                $interval       = (float)$datetime2 - (float)$datetimeMesure;
+                if ($interval!=0){
+                    $consoResultat = ((((float)$ppapHp - (float)$cacheHp) + ((float)$ppapHc - (float)$cacheHc)) / $interval) * 3600;
+                } else {
+                    $consoResultat = 0;
+                }
                 log::add('teleinfo', 'debug', 'Intervale depuis la dernière valeur : ' . $interval);
-                log::add('teleinfo', 'debug', 'Conso calculée : ' . $consoResultat . ' Wh');
+                log::add('teleinfo', 'debug', 'Conso calculée : ' . intval($consoResultat) . ' Wh');
                 $cmdPpap->event(intval($consoResultat));
                 cache::set('teleinfo::ppap_manuelle::' . $eqLogic->getId() . '::hc', $ppapHc, 150);
                 cache::set('teleinfo::ppap_manuelle::' . $eqLogic->getId() . '::hp', $ppapHp, 150);
@@ -2612,36 +2809,64 @@ class teleinfo extends eqLogic
 
     /*     * ******** MANAGEMENT ZONE ******* */
 
-    public static function dependancy_info()
-    {
-        $return                  = array();
-        $return['log']           = 'teleinfo_update';
-        $return['progress_file'] = '/tmp/jeedom/teleinfo/dependance';
-        $return['state']         = (self::installationOk()) ? 'ok' : 'nok';
-        return $return;
-    }
-
-    public static function installationOk()
-    {
-        try {
-            $dependances_version = config::byKey('dependancy_version', 'teleinfo', 0);
-            if (intval($dependances_version) >= 1.0) {
-                return true;
-            } else {
-                config::save('dependancy_version', 1.0, 'teleinfo');
-                return false;
-            }
-        } catch (\Exception $e) {
-            return true;
+    private static function pythonRequirementsInstalled(string $pythonPath, string $requirementsPath) {
+        if (!file_exists($pythonPath) || !file_exists($requirementsPath)) {
+          return false;
         }
-    }
-
-    public static function dependancy_install()
-    {
-        log::remove(__CLASS__ . '_update');
-        return array('script' => __DIR__ . '/../../ressources/install_#stype#.sh ' . jeedom::getTmpFolder('teleinfo') . '/dependance', 'log' => log::getPathToLog(__CLASS__ . '_update'));
-    }
-
+        exec("{$pythonPath} -m pip freeze", $packages_installed);
+        $packages = join("||", $packages_installed);
+        exec("cat {$requirementsPath}", $packages_needed);
+        foreach ($packages_needed as $line) {
+          if (preg_match('/([^\s]+)[\s]*([>=~]=)[\s]*([\d+\.?]+)$/', $line, $need) === 1) {
+            if (preg_match('/' . $need[1] . '==([\d+\.?]+)/', $packages, $install) === 1) {
+              if ($need[2] == '==' && $need[3] != $install[1]) {
+                return false;
+              } elseif (version_compare($need[3], $install[1], '>')) {
+                return false;
+              }
+            } else {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+    
+      public static function dependancy_info()
+      {
+        $pythonBin = __DIR__ . '/../../resources/venv/bin/python3';
+        $pythonReq = __DIR__ . '/../../resources/requirements.txt';
+        $return = array();
+        $return['log'] = log::getPathToLog(__CLASS__ . '_packages');
+        $return['progress_file'] = jeedom::getTmpFolder(__CLASS__) . '/dependance';
+        $return['state'] = 'ok';
+        if (file_exists($return['progress_file'])) {
+          $return['state'] = 'in_progress';
+          log::add(__CLASS__, 'debug', sprintf(
+            __("Dépendances en cours d'installation... (%s%%)", __FILE__),
+            trim(file_get_contents($return['progress_file']))
+          ));
+        } elseif (!file_exists($pythonBin)) {
+          $return['state'] = 'nok';
+        } elseif (!self::pythonRequirementsInstalled($pythonBin, $pythonReq)) {
+          $return['state'] = 'nok';
+        } else {
+          log::add(__CLASS__, 'debug', sprintf(__('Dépendances installées.', __FILE__)));
+        }
+        return $return;
+      }
+    
+      public static function dependancy_install()
+      {
+        $depLogFile = __CLASS__ . '_packages';
+        log::remove($depLogFile);
+        log::add(__CLASS__, 'info', sprintf(
+            __('Installation des dépendances, voir log dédié (%s)', __FILE__),
+            $depLogFile
+          ));
+        return array('script' => __DIR__ . '/../../resources/install_apt.sh ' . jeedom::getTmpFolder(__CLASS__) . '/dependance', 'log' => log::getPathToLog($depLogFile));
+      }
+    
 }
 
 class teleinfoCmd extends cmd
