@@ -555,7 +555,7 @@ class teleinfo extends eqLogic
      */
     public static function deamon_info()
     {
-        $activation_Modem = (config::byKey('activation_Modem', 'teleinfo') == "") ? 1 : config::byKey('activation_Modem', 'teleinfo');
+        $activation_Modem = (config::byKey('activation_Modem', 'teleinfo') == "") ? 0 : config::byKey('activation_Modem', 'teleinfo');
         $activation_Mqtt = (config::byKey('activation_Mqtt', 'teleinfo') == "") ? 0 : config::byKey('activation_Mqtt', 'teleinfo');
         $consoPort = (config::byKey('port', 'teleinfo') == "") ? "" : config::byKey('port', 'teleinfo');
         $productionPort = (config::byKey('port_modem2', 'teleinfo') == "") ? "" : config::byKey('port_modem2', 'teleinfo');
