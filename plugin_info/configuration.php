@@ -296,7 +296,7 @@ try {
             <div id="div_activation_Modem" class="form-group">
                 <label class="col-lg-4 control-label">Utilisation d'un modem téléinformation : </label>
                 <div class="col-lg-4">
-                    <input type="checkbox" id="activation_Modem" class="configKey" data-l1key="activation_Modem" placeholder="{{Activer}}" checked/>
+                    <input type="checkbox" id="activation_Modem" class="configKey" data-l1key="activation_Modem" placeholder="{{Activer}}"/>
                     <label class="check_modem" for="activation_Modem">compléter la partie configuration du modem</label>
                     </div>
             </div>
