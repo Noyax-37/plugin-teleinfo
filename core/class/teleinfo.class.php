@@ -404,7 +404,7 @@ class teleinfo extends eqLogic
             exec('sudo chmod 777 ' . (string)$port . ' > /dev/null 2>&1');
 
 
-            log::add('teleinfo', 'info', __('---------- Informations de lancement ---------'), __FILE__);
+            log::add('teleinfo', 'info', __('---------- Informations de lancement ---------', __FILE__));
             log::add('teleinfo', 'info', __('Port modem : ', __FILE__) . (string)$port);
             log::add('teleinfo', 'info', 'Socket : ' . $socketPort);
             log::add('teleinfo', 'info', 'Type : ' . $type);
