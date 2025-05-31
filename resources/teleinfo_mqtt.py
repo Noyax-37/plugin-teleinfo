@@ -13,6 +13,7 @@ import traceback
 import globals
 import paho.mqtt.client as mqtt_client
 from threading import Thread, Lock
+import re
 
 try:
     from jeedom.jeedom import *
@@ -31,7 +32,13 @@ class error(Exception):
 
 # ----------------------------------------------------------------------------
 # Teleinfo core
+#
+# trame wifiTIC: voir la documentation de wifiTIC
+# trame tasmota: {"ADCO":"abcdefgh","OPTARIF":"BASE","ISOUSC":"30","BASE":"040335283","PTEC":"TH..","IINST1":"003","IINST2":"003","IINST3":"009","IMAX1":"032","IMAX2":"025","IMAX3":"021","PMAX":"14550","PAPP":"03551","MOTDETAT":"000000","PPOT":"00"}
+# trame teleinfo2mqtt: {"ADCO": {"raw": "12345678901","value": 12345678901},"OPTARIF": {"raw": "HC..","value": "HC"},"ISOUSC": {"raw": "45","value": 45}, ...
+# trame de base: {"TIC":{"ADCO":"testMQTT HCHP","HCHC":4711286,"HCHP":3590469}}
 # ----------------------------------------------------------------------------
+
 def handler(signum=None, frame=None):
     logging.debug(f"MQTT------Signal {signum} caught, exiting...")
     shutdown()
@@ -48,6 +55,87 @@ def mqtt_on_connect( client, userdata, flags, rc ):
 def mqtt_on_disconnect(client, userdata, rc):
     logging.info("MQTT------disconnecting reason  "  +str(rc))
     shutdown()
+
+def find_key_subdicts(json_obj, target_keys, result=None):
+    """
+    Parcourt récursivement un JSON pour trouver tous les sous-dictionnaires contenant l'une des clés dans target_keys.
+    Retourne une liste de ces sous-dictionnaires.
+    """
+    if result is None:
+        result = []
+
+    if isinstance(json_obj, dict):
+        if any(key in json_obj for key in target_keys):
+            logging.debug(f"Trouvé une clé cible dans : {json_obj}")
+            result.append(json_obj)
+        for key, value in json_obj.items():
+            find_key_subdicts(value, target_keys, result)
+    elif isinstance(json_obj, list):
+        for item in json_obj:
+            find_key_subdicts(item, target_keys, result)
+    
+    return result
+
+def is_teleinfo2mqtt_format(subdict):
+    """
+    Vérifie si le sous-dictionnaire suit le format teleinfo2mqtt
+    (c'est-à-dire que chaque valeur est un dictionnaire avec une clé 'value').
+    Retourne True si au moins une valeur suit ce format, False sinon.
+    """
+    return any(
+        isinstance(value, dict) and 'value' in value
+        for value in subdict.values()
+    )
+
+def clean_ptec_optarif(value):
+    """
+    Nettoie une valeur en supprimant les '.' et ')' si elle est une chaîne.
+    Retourne la valeur nettoyée ou la valeur originale si ce n'est pas une chaîne.
+    """
+    if isinstance(value, str):
+        cleaned_value = value.replace('.', '').replace(')', '')
+        return cleaned_value
+    return value
+
+def extract_teleinfo2mqtt_values(subdict):
+    """
+    Extrait la propriété 'value' pour chaque clé dans le dictionnaire
+    et retourne un nouveau dictionnaire avec les clés associées directement à leurs valeurs 'value'.
+    Nettoie les valeurs de 'PTEC' et 'OPTARIF' en supprimant '.' et ')'.
+    """
+    result = {}
+    for key, value in subdict.items():
+        if isinstance(value, dict) and 'value' in value:
+            val = value['raw']
+            if key in ['PTEC', 'OPTARIF']:
+                result[key] = clean_ptec_optarif(val)
+            else:
+                result[key] = val
+        else:
+            if key in ['PTEC', 'OPTARIF']:
+                result[key] = clean_ptec_optarif(value)
+            else:
+                result[key] = value
+    return result
+
+def format_subdict(subdict):
+    """
+    Formate un sous-dictionnaire dans la structure {device_name: {...}}.
+    Utilise la valeur de 'ADCO' ou 'ADSC' comme device_name et ajoute une clé 'device' avec cette valeur.
+    Nettoie les valeurs de 'PTEC' et 'OPTARIF' si elles n'ont pas été nettoyées avant.
+    """
+    cleaned_subdict = subdict.copy()
+    for key in ['PTEC', 'OPTARIF']:
+        if key in cleaned_subdict:
+            cleaned_subdict[key] = clean_ptec_optarif(cleaned_subdict[key])
+    
+    device_name = cleaned_subdict.get('ADCO', cleaned_subdict.get('ADSC', 'unknown_device'))
+    if device_name == 'unknown_device':
+        logging.warning("Ni 'ADCO' ni 'ADSC' trouvé dans le sous-dictionnaire, utilisation de 'unknown_device' comme device_name")
+    
+    cleaned_subdict['device'] = device_name
+    
+    return cleaned_subdict
 
 def mqtt_on_message(client, userdata, message):
     # lecture des trames MQTT
@@ -107,61 +195,42 @@ def mqtt_on_message(client, userdata, message):
             logging.debug("MQTT------message non wifiTIC")
 
     try:
-        x = json.loads(str(y))
-        for key in x:
-                # premier test pour etre compatible avec teleinfo2mqtt
-                if key == "ADCO" or key == "ADSC" or trouveTIC:
-                    if trouveTIC == False:
-                        device = key
-                    trouveTIC = True
-                    for keys in x[key]:
-                        if keys == "raw":
-                            valeur = str(x[key]['raw'])
-                            if key == 'PTEC':
-                                valeur = valeur.replace(".", "")
-                                valeur = valeur.replace(")", "")
-                                data[key] = valeur
-                            elif key == 'OPTARIF':
-                                valeur = valeur.replace(".", "")
-                                valeur = valeur.replace(")", "")
-                                data[key] = valeur
-                            else:
-                                # valeur = valeur.replace(" ", "%20")
-                                data[key] = valeur
-                            logging.debug( "MQTT------ " + str(key) + " : " +  valeur)
+        if isinstance(y, str):
+            x = json.loads(y)  # Parser la chaîne JSON
+        else:
+            x = y  # y est déjà un dictionnaire
+
+        # Clés à rechercher
+        target_keys = ['ADCO', 'ADSC']
+        
+        # Récupérer les sous-dictionnaires contenant 'ADCO' ou 'ADSC'
+        subdicts = find_key_subdicts(x, target_keys)
+        
+        if subdicts:
+            logging.debug("MQTT------message teleinfo2mqtt ou tasmota")
+            for i, subdict in enumerate(subdicts, 1):
+                logging.debug(f"Sous-dictionnaire {i}: {subdict}")
+                
+                if is_teleinfo2mqtt_format(subdict):
+                    simplified_dict = extract_teleinfo2mqtt_values(subdict)
                 else:
-                    for keys in x[key]:
-                        # tic teleinfo commune
-                        if keys == "ADCO" or keys == "ADSC" or trouveTIC:
-                            if trouveTIC == False:
-                                logging.debug( "------------------------------------") 
-                                device = keys
-                            trouveTIC = True
-                            valeur = str(x[key][keys])
-                            if keys == 'PTEC':
-                                valeur = valeur.replace(".", "")
-                                valeur = valeur.replace(")", "")
-                                data[keys] = valeur
-                            elif keys == 'OPTARIF':
-                                valeur = valeur.replace(".", "")
-                                valeur = valeur.replace(")", "")
-                                data[keys] = valeur
-                            else:
-                                # valeur = valeur.replace(" ", "%20")
-                                data[keys] = valeur
-                            logging.debug( "MQTT------ " + str(keys) + " : " +  valeur)
+                    simplified_dict = subdict
+                
+                formatted_dict = format_subdict(simplified_dict)
+
+                device_value = formatted_dict['device']
+
+                try:
+                    globals.JEEDOM_COM.add_changes('device::' + device_value, formatted_dict)
+                except Exception:
+                    error_com = f"Erreur lors de l'envoi à Jeedom : {str(e)}"
+                    logging.error(f"MQTT------{error_com}")
+        else:
+            logging.debug("Aucun sous-dictionnaire avec 'ADCO' ou 'ADSC' trouvé")
+
     except:
         logging.debug("MQTT------message autre")
-    if trouveTIC:
-            for cle, valeur in data.items():
-                _SendData[cle] = valeur
-            try:
-                _SendData["device"] = data[device]
-                globals.JEEDOM_COM.add_changes('device::' + data[device], _SendData)
-            except Exception:
-                error_com = "Connection error"
-                logging.error("MQTT------" + error_com)
-    
+
 def read_socket(cycle):
     while True:
         try:
