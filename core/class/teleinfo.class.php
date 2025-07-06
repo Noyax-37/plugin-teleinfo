@@ -163,7 +163,7 @@ class teleinfo extends eqLogic
 	 */
 
      public static function createCmdFromRest($teleinfo, $oKey){
-        log::add('teleinfo', 'info', sprintf(__('création de la commande %s pour le compteur ', __FILE__), $oKey) . ' ' . $teleinfo->getName());
+        log::add('teleinfo', 'info', sprintf(__('création de la commande %s pour le compteur', __FILE__), $oKey) . ' ' . $teleinfo->getName());
         $cmd = (new teleinfoCmd())
             ->setName($oKey)
             ->setLogicalId($oKey)
