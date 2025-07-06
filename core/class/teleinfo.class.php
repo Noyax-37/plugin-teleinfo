@@ -2495,7 +2495,7 @@ class teleinfo extends eqLogic
                 cache::set('teleinfo::stat_moy_last_hour::hp' . $cptId, $ppapHp, 7200);
             }
 			else {
-                log::add('teleinfo', 'debug', __('Pas de calcul', __FILE__));
+                log::add('teleinfo', 'debug', sprintf(__('Compteur ID %s => Pas de calcul', __FILE__) , $cptId));
             }
         }
     }
@@ -2545,13 +2545,13 @@ class teleinfo extends eqLogic
                 } else {
                     $consoResultat = 0;
                 }
-                log::add('teleinfo', 'debug', __('Compteur ' . $cptId . ' Intervale depuis la dernière valeur :', __FILE__) . ' ' . $interval);
-                log::add('teleinfo', 'debug', __('Compteur ' . $cptId . ' Conso calculée :', __FILE__) . ' ' . intval($consoResultat) . ' Wh');
+                log::add('teleinfo', 'debug', 'Compteur ' . $cptId . __(' Intervale depuis la dernière valeur :', __FILE__) . ' ' . $interval);
+                log::add('teleinfo', 'debug', 'Compteur ' . $cptId . __(' Conso calculée :', __FILE__) . ' ' . intval($consoResultat) . ' Wh');
                 $cmdPpap->event(intval($consoResultat));
                 cache::set('teleinfo::ppap_manuelle::' . $cptId . '::hc', $ppapHc, 150);
                 cache::set('teleinfo::ppap_manuelle::' . $cptId . '::hp', $ppapHp, 150);
             } else {
-                log::add('teleinfo', 'debug', 'Compteur ' . $cptId . ' Pas de calcul');
+                log::add('teleinfo', 'debug', 'Compteur ' . $cptId . __(' Pas de calcul', __FILE__));
             }
         }
     }
