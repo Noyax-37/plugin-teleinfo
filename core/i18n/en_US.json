@@ -116,7 +116,7 @@
         "] Le port1 n\\'est pas configuré": "] Port1 is not configured",
         "] Le port2 %s n\\'existe pas": "] Port 2 %s does not exist",
         "] Le port2 n\\'est pas configuré": "] Port 2 is not configured",
-        "création de la commande %s pour le compteur": "creation of command %s for counter",
+        "création de la commande %s pour le compteur ": "creation of command %s for meter",
         "liste des donnees :": "list of data:",
         "pas d envoi de message faute de configuration": "no messages sent due to configuration error"
     },

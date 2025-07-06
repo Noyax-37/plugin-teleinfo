@@ -116,7 +116,7 @@
         "] Le port1 n\\'est pas configuré": "] Port1 ist nicht konfiguriert",
         "] Le port2 %s n\\'existe pas": "] Der Port2 %s existiert nicht",
         "] Le port2 n\\'est pas configuré": "] Port2 ist nicht konfiguriert",
-        "création de la commande %s pour le compteur": "erstellung des Befehls %s für den Zähler",
+        "création de la commande %s pour le compteur ": "erstellung des Befehls %s für den Zähler",
         "liste des donnees :": "datenliste:",
         "pas d envoi de message faute de configuration": "keine Nachrichtenübermittlung aufgrund fehlender Konfiguration"
     },
