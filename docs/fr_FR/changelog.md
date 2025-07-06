@@ -12,6 +12,16 @@ Pour toutes demandes :
  - [Changelog version bêta](https://github.com/Noyax-37/plugin-teleinfo/blob/develop/docs/fr_FR/changelog.md)
 
 
+## 4.9.6
+- adaptation au passage Debian 12 pour le calcul des statistiques moyennes sur la dernière heure (merci @fwehrle)
+- possibilité donnée à l'utilisateur de modifier l'historisation des commandes
+
+## 4.9.5
+- amélioration du traitement mqtt et prise en compte de tasmota
+
+## 4.9.4
+- traduction du plugin, merci @mips
+
 ## 4.9.3
 - correction erreur dans le démon du modem cartelectronic modèle 2 compteurs
 - amélioration de la gestion des erreurs dans le démon du modem cartelectronic modèle 2 compteurs

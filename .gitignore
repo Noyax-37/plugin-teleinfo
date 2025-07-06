@@ -17,7 +17,6 @@ resources/teleinfo - Copie.py
 
 resources/venv/
 
-
-
+core/i18n/*.json
 
 sauvegarde/
