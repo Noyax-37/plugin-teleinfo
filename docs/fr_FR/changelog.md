@@ -12,6 +12,10 @@ Pour toutes demandes :
  - [Changelog version bêta](https://github.com/Noyax-37/plugin-teleinfo/blob/develop/docs/fr_FR/changelog.md)
 
 
+## 4.9.6
+- adaptation au passage Debian 12 pour le calcul des statistiques moyennes sur la dernière heure (merci @fwehrle)
+- possibilité donnée à l'utilisateur de modifier l'historisation des commandes
+
 ## 4.9.5
 - amélioration du traitement mqtt et prise en compte de tasmota
 
