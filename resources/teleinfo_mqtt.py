@@ -129,7 +129,7 @@ def format_subdict(subdict):
         if key in cleaned_subdict:
             cleaned_subdict[key] = clean_ptec_optarif(cleaned_subdict[key])
     
-    device_name = cleaned_subdict.get('ADCO', cleaned_subdict.get('ADSC', 'unknown_device'))
+    device_name = str(cleaned_subdict.get('ADCO', cleaned_subdict.get('ADSC', 'unknown_device')))
     if device_name == 'unknown_device':
         logging.warning("Ni 'ADCO' ni 'ADSC' trouvé dans le sous-dictionnaire, utilisation de 'unknown_device' comme device_name")
     
