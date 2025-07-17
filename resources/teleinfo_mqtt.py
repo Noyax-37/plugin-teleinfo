@@ -129,7 +129,7 @@ def format_subdict(subdict):
         if key in cleaned_subdict:
             cleaned_subdict[key] = clean_ptec_optarif(cleaned_subdict[key])
     
-    device_name = cleaned_subdict.get('ADCO', cleaned_subdict.get('ADSC', 'unknown_device'))
+    device_name = str(cleaned_subdict.get('ADCO', cleaned_subdict.get('ADSC', 'unknown_device')))
     if device_name == 'unknown_device':
         logging.warning("Ni 'ADCO' ni 'ADSC' trouvé dans le sous-dictionnaire, utilisation de 'unknown_device' comme device_name")
     
@@ -191,6 +191,15 @@ def mqtt_on_message(client, userdata, message):
                 data['SINST3'] = x['consumption']['phases'][2]['app']
                 data['IRMS3'] = x['consumption']['phases'][2]['iinst']
             logging.debug("MQTT------message wifiTIC. ADCO: " + data['ADCO'])
+            for cle, valeur in data.items():
+                _SendData[cle] = valeur
+            try:
+                _SendData["device"] = data[device]
+                globals.JEEDOM_COM.add_changes('device::' + data[device], _SendData)
+            except Exception:
+                error_com = "Connection error"
+                logging.error("MQTT------" + error_com)
+            return
         except:
             logging.debug("MQTT------message non wifiTIC")
 
