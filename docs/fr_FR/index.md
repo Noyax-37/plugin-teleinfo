@@ -658,6 +658,271 @@ Voici les courbes que vous pourrez avoir:
 <a>
 <br><br><br><br><br><br><br><br><br><br><br><br>
 
+<br><br><br>
+
+# Le Widget Personnalisé (Template)
+===
+
+Le plugin Téléinformation propose un widget offrant une vue synthétique de votre consommation et injection électrique.
+
+<br><br>
+
+## Activation du template
+<br>
+
+Pour bénéficier du widget personnalisé, deux conditions doivent être remplies sur l'équipement :
+
+1. **Utilisation des nouveaux index** : Cocher l'option dans l'onglet "Equipement"
+2. **Utiliser le template du plugin** : Activer cette option (disponible à partir de la version 4.8.0)
+
+<a href="../images/teleinfo_template_config.png">
+<img src="../images/teleinfo_template_config.png" alt="Configuration template" style="width:600px;"/>
+</a>
+
+<br><br><br><br><br>
+
+## Aperçu du widget
+<br>
+
+<a href="../images/teleinfo_template_widget.png">
+<img src="../images/teleinfo_template_widget.png" alt="Widget personnalisé" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Le widget se compose de plusieurs sections :
+- **Bouton Panel** : Accès rapide au panel téléinfo (si activé)
+- **Section Consommation** : Données de consommation avec vumètre et tableau
+- **Section Production** : Données d'injection (si production activée)
+- **Section Toutes les commandes** : Liste complète des commandes (optionnel)
+
+<br><br><br><br><br>
+
+## Le bouton Panel
+<br>
+
+<a href="../images/teleinfo_template_panelbtn.png">
+<img src="../images/teleinfo_template_panelbtn.png" alt="Bouton Panel" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Un bouton d'accès rapide au panel téléinfo peut être affiché en haut du widget. Ce bouton n'apparaît que si :
+
+- L'option **Afficher le panel desktop** est cochée dans la configuration générale du plugin
+- Le panel est correctement activé
+
+Un clic sur ce bouton ouvre le panel téléinfo dans un nouvel onglet.
+
+<br><br><br><br><br>
+
+## La section Consommation
+<br>
+
+<a href="../images/teleinfo_template_conso.png">
+<img src="../images/teleinfo_template_conso.png" alt="Section Consommation" style="width:400px;"/>
+</a>
+
+<br><br>
+
+### En-tête de section
+
+L'en-tête affiche plusieurs informations dynamiques :
+
+| Élément | Description |
+|---------|-------------|
+| **Mode** | Badge indiquant "Standard" (linky=1) ou "Historique" (linky=0) |
+| **Abo** | Nom de l'abonnement en cours (NGTF en mode standard, OPTARIF en mode historique) |
+| **Tarif** | Libellé du tarif actuel (LTARF en mode standard, PTEC en mode historique) |
+
+<br>
+
+### Le badge tarif coloré
+
+Le tarif en cours est affiché avec un code couleur automatique :
+
+| Type de tarif | Couleur | Exemples |
+|---------------|---------|----------|
+| **Heures Creuses** | Vert | HC, CREUSE, HC.. |
+| **Heures Pleines** | Rouge | HP, PLEINE, TH.. |
+| **Standard** | Bleu | BASE |
+| **Pointe** | Orange | POINT, PM |
+| **Tempo Bleu** | Bleu foncé | BLEU, B.., HP BLEU, HC BLEU |
+| **Tempo Blanc** | Gris | BLANC, W.. |
+| **Tempo Rouge** | Rouge foncé | ROUGE, R.. |
+
+>**INFORMATION**
+>
+>Pour le tarif Tempo, la couleur (Bleu/Blanc/Rouge) est prioritaire sur le type horaire (HP/HC). Ainsi "HP BLEU" affichera un badge bleu et non rouge.
+
+<br>
+
+### Le vumètre de puissance
+
+<a href="../images/teleinfo_template_vumeter.png">
+<img src="../images/teleinfo_template_vumeter.png" alt="Vumètre puissance" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Le vumètre affiche la puissance apparente instantanée :
+
+- **Mode Standard** : Utilise SINSTS (Puissance instantanée soutirée)
+- **Mode Historique** : Utilise PAPP (Puissance apparente)
+
+La barre de progression change de couleur selon le niveau de charge :
+
+| Niveau | Couleur | Signification |
+|--------|---------|---------------|
+| 0-30% | Vert | Consommation faible |
+| 30-60% | Jaune | Consommation modérée |
+| 60-85% | Orange | Consommation élevée |
+| 85-100% | Rouge | Consommation critique |
+
+La valeur maximale peut être configurée via le paramètre **Puissance max (VA)** dans la configuration de l'équipement (par défaut : 12000 VA).
+
+<br>
+
+### Le tableau des index
+
+<a href="../images/teleinfo_template_table.png">
+<img src="../images/teleinfo_template_table.png" alt="Tableau des index" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Le tableau affiche les données de chaque index configuré :
+
+| Colonne | Description |
+|---------|-------------|
+| **Index** | Libellé de l'index (configuré dans l'équipement) |
+| **Valeur** | Valeur actuelle de l'index |
+| **Conso Jour** | Consommation du jour en kWh |
+| **Coût Jour** | Coût estimé du jour en € |
+
+La ligne de total (index 00) est mise en évidence avec un fond bleu clair.
+
+<br>
+
+### Totaux
+
+<a href="../images/teleinfo_template_total.png">
+<img src="../images/teleinfo_template_total.png" alt="Totaux" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Les totaux affichés :
+- **Total Jour** : Consommation totale de la journée en kWh
+- **Coût Total** : Coût total estimé de la journée en €
+
+<br><br><br><br><br>
+
+## La section Production
+<br>
+
+<a href="../images/teleinfo_template_prod.png">
+<img src="../images/teleinfo_template_prod.png" alt="Section Production" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Cette section n'apparaît que si l'option **Compteur en mode conso ET prod** est activée dans la configuration de l'équipement.
+
+Elle comprend :
+
+| Élément | Description |
+|---------|-------------|
+| **Vumètre SINSTI** | Puissance injectée instantanée avec barre de progression |
+| **Index EAIT** | Cumul de l'énergie active injectée |
+| **Injection Jour** | Production du jour en kWh |
+| **Revenu** | Revenu estimé de la production (si tarif de vente configuré) |
+
+Le vumètre de production utilise une palette de couleurs bleu/violet distincte de celle de la consommation.
+
+<br><br><br><br><br>
+
+## La section Toutes les commandes
+<br>
+
+<a href="../images/teleinfo_template_allcmds.png">
+<img src="../images/teleinfo_template_allcmds.png" alt="Toutes les commandes" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Cette section optionnelle affiche toutes les commandes visibles de l'équipement sous forme de tableau. Pour l'activer, cocher l'option **Afficher toutes les commandes** dans la configuration de l'équipement.
+
+<br><br><br><br><br>
+
+## Les infobulles (Tooltips)
+<br>
+
+<a href="../images/teleinfo_template_tooltip.png">
+<img src="../images/teleinfo_template_tooltip.png" alt="Infobulle" style="width:400px;"/>
+</a>
+
+<br><br>
+
+Au survol des valeurs, une infobulle affiche les informations de datation :
+
+- **Date valeur** : Date à laquelle la valeur a été mesurée
+- **Date collecte** : Date à laquelle Jeedom a collecté la valeur
+
+Cette fonctionnalité est disponible sur :
+- Les valeurs d'index
+- Les consommations journalières
+- Les coûts journaliers
+- La puissance instantanée
+- L'abonnement et le tarif
+- Les données de production
+
+Les valeurs sont automatiquement mises à jour lors des changements.
+
+<br><br><br><br><br>
+
+## Mise à jour dynamique
+<br>
+
+Le widget se met à jour automatiquement en temps réel sans nécessiter de rafraîchissement de la page :
+
+- Les valeurs sont mises à jour à chaque réception de trame
+- Les animations visuelles signalent les changements
+- Les dates dans les infobulles sont synchronisées
+- Les couleurs de badge s'adaptent au tarif en cours
+
+<br><br><br><br><br>
+
+## Configuration avancée
+<br>
+
+### Paramètres du widget
+
+| Paramètre | Localisation | Description |
+|-----------|--------------|-------------|
+| **Puissance max (VA)** | Équipement > Configuration | Valeur maximale du vumètre consommation |
+| **Puissance max injection (VA)** | Équipement > Configuration | Valeur maximale du vumètre production |
+| **Tarif de revente** | Équipement > Index | Prix au kWh pour calculer les revenus de production |
+
+## Exemple complet
+<br>
+
+<a href="../images/teleinfo_template_full.png">
+<img src="../images/teleinfo_template_full.png" alt="Widget complet" style="width:350px;"/>
+</a>
+
+<br><br>
+
+Exemple d'un widget complet avec :
+- ✅ Bouton Panel activé
+- ✅ Section Consommation avec vumètre
+- ✅ Tarif Tempo (badge Bleu pour HP BLEU)
+- ✅ 6 index configurés avec libellés personnalisés
+- ✅ Section Production activée
+- ✅ Totaux calculés automatiquement
+- ✅ Infobulles au survol
+
+<br><br><br><br><br>
 
 
 Santé

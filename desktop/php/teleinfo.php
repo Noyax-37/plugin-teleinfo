@@ -1,11 +1,4 @@
 <?php
-//header("Location:");
-//header('Refresh:');
-$url = $_SERVER['HTTP_HOST']; 
-$url .= $_SERVER['REQUEST_URI']; 
-header('Refresh','URL='.$url);
-
-
 if (!isConnect('admin')) {
     throw new Exception('Error 401 Unauthorized');
 }
@@ -191,11 +184,69 @@ switch ($controlerState) {
                         </div>
 
                         <div class="form-group">
-								<label class="col-lg-4 control-label pull-left">{{Utiliser le template du plugin}}</label>
-								<div class="col-sm-6">
-									<input type="checkbox" id="use_plugin_template" class="eqLogicAttr configKey" data-l1key="configuration" data-l2key="usePluginTemplate" checked>
-								</div>
+							<label class="col-lg-4 control-label pull-left">{{Utiliser le template du plugin}}</label>
+							<div class="col-sm-6">
+								<input type="checkbox" id="use_plugin_template" class="eqLogicAttr configKey" data-l1key="configuration" data-l2key="usePluginTemplate" checked>
+							</div>
 						</div>
+
+                        <!-- ========== CHAMPS TEMPLATE (grisés si template désactivé) ========== -->
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+							<label class="col-lg-3 control-label pull-left">{{téléinfo en mode standard? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour qu'il utilise les bons champs}}"></i></sup></label>
+							<div class="col-sm-6">
+								<input type="checkbox" id="template_linky" class="eqLogicAttr configKey" data-l1key="configuration" data-l2key="linky">
+							</div>
+						</div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+							<label class="col-lg-3 control-label pull-left">{{Si template: puissance max en VA? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour que l'animation du vumètre de SINSTS soit cohérente}}"></i></sup></label>
+							<div class="col-sm-2">
+								<input type="text" id="template_pmax" class="eqLogicAttr configKey form-control" data-l1key="configuration" data-l2key="pmax" placeholder="12000">
+							</div>
+						</div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+							<label class="col-lg-3 control-label pull-left">{{Si template: p max injection en VA? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour que l'animation du vumetre de SINSTI soit cohérente}}"></i></sup></label>
+							<div class="col-sm-2">
+								<input type="text" id="template_sinsti_max" class="eqLogicAttr configKey form-control" data-l1key="configuration" data-l2key="sinsti_max" placeholder="12000">
+							</div>
+						</div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+							<label class="col-lg-3 control-label pull-left">{{Afficher tous les autres champs? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour que tous les champs marqués 'visible' soient affichées}}"></i></sup></label>
+							<div class="col-sm-6">
+								<input type="checkbox" id="template_display_all" class="eqLogicAttr configKey" data-l1key="configuration" data-l2key="display_all">
+							</div>
+						</div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+                            <label class="col-lg-3 control-label pull-left">{{Taille texte vumètres (px ou em ou %)}} <sup><i class="fas fa-question-circle tooltips" title="Laissez vide pour garder la valeur par défaut (≈ 0.95em / 16px)"></i></sup></label>
+                            <div class="col-sm-2">
+                                <input type="text" class="eqLogicAttr form-control input-sm" 
+                                    data-l1key="configuration" data-l2key="vumeter_font_size" 
+                                    placeholder="1.1em ou 18px ou 120%" value="1.1em" />
+                            </div>
+                        </div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+                            <label class="col-lg-3 control-label pull-left">{{Couleur texte valeurs commandes}} <sup><i class="fas fa-question-circle tooltips" title="Modifie la couleur utilisée dans le tableau des commandes. Couleur par défaut : #2c3e50"></i></sup></label>
+                            <div class="col-sm-2">
+                                <div class="input-group">
+                                    <span class="input-group-addon cursor" style="padding: 2px; background-color: #eee;">
+                                        <input type="color" class="form-control" id="template_value_color_picker" style="width: 40px; padding: 2px; cursor: pointer;">
+                                    </span>
+                                    <input type="text" class="col-sm-2 eqLogicAttr form-control configKey" id="template_value_color" data-l1key="configuration" data-l2key="value_color" placeholder="#2c3e50">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ========== FIN CHAMPS TEMPLATE ========== -->
 
                         <div class="form-group ProdCons">
                             <label class="col-lg-4 control-label pull-left">{{Compteur en mode conso ET prod}} <sup><i class="fas fa-question-circle tooltips" title="{{A cocher si le compteur sert aussi en production (Linky)}}"></i></sup></label>
@@ -498,6 +549,18 @@ switch ($controlerState) {
 	</div>
 </div>
 
+<style>
+    /* Style pour les champs template désactivés */
+    .template-config-field.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .template-config-field.disabled label,
+    .template-config-field.disabled input {
+        color: #999;
+    }
+</style>
+
 <script>
 
 function prePrintEqLogic() {
@@ -512,6 +575,37 @@ function prePrintEqLogic() {
     $('.eqLogicAttr[data-l1key=configuration][data-l2key=index09]').value(' ');
     $('.eqLogicAttr[data-l1key=configuration][data-l2key=index10]').value(' ');
 }
+
+// Fonction pour activer/désactiver les champs template
+function updateTemplateFields() {
+    var isChecked = $('#use_plugin_template').is(':checked');
+    
+    if (isChecked) {
+        $('.template-config-field').removeClass('disabled');
+        $('.template-config-field input').prop('disabled', false);
+    } else {
+        $('.template-config-field').addClass('disabled');
+        $('.template-config-field input').prop('disabled', true);
+    }
+}
+
+// Appeler la fonction au chargement et lors du changement de la case
+$(document).ready(function() {
+    // Initialiser l'état des champs template
+    setTimeout(function() {
+        updateTemplateFields();
+    }, 100);
+    
+    // Écouter les changements sur la case à cocher
+    $('#use_plugin_template').on('change', function() {
+        updateTemplateFields();
+    });
+});
+
+// Également après le chargement d'un équipement
+$('body').on('change', '#use_plugin_template', function() {
+    updateTemplateFields();
+});
 
 //création du tableau des paramètres des couleurs par défaut
 $colordefaut = ['#D62828','#001219','#005F73','#0A9396','#94D2BD',
@@ -536,11 +630,41 @@ $('#btTeleinfoRazCouleurs').on('click', function () {
     $('#favcolor14').value($colordefaut[14]);
 });
 
-//$('#favcolor14').value('#00FF00');
-//    document.getElementById("favcolor14").value = "#00FF00";
-//    $('.eqLogicAttr[data-l1key=configuration][data-l2key=color14]').value("#00FF00");
-//eqLogicAttr configKey" id="favcolor14"  data-l1key="configuration" data-l2key="color14
 
+function updateValueColorPicker() {
+    var colorValue = $('#template_value_color').val();
+    if (colorValue && colorValue.match(/^#[0-9A-Fa-f]{6}$/)) {
+        $('#template_value_color_picker').val(colorValue);
+    } else {
+        $('#template_value_color_picker').val('#34495e');
+    }
+}
+
+// Synchroniser le color picker avec le champ texte
+$('#template_value_color_picker').on('change', function() {
+    $('#template_value_color').val($(this).val());
+});
+
+$('#template_value_color').on('change', function() {
+    updateValueColorPicker();
+});
+
+// Initialiser au chargement
+$('body').on('change', '#template_value_color', function() {
+    updateValueColorPicker();
+});
+
+// Appeler après le chargement d'un équipement
+$('body').on('change', '.eqLogicAttr[data-l1key=configuration][data-l2key=value_color]', function() {
+    updateValueColorPicker();
+});
+
+// Initialiser au chargement de la page
+$(document).ready(function() {
+    setTimeout(function() {
+        updateValueColorPicker();
+    }, 200);
+});
 
 </script>
 
@@ -548,5 +672,3 @@ $('#btTeleinfoRazCouleurs').on('click', function () {
 <?php include_file('desktop', 'teleinfo', 'js', 'teleinfo'); ?>
 <?php include_file('core', 'plugin.template', 'js'); ?>
 <?php include_file('desktop', 'teleinfo', 'css', 'teleinfo'); ?>
-
-

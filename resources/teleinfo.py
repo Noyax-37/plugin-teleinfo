@@ -438,7 +438,7 @@ class Teleinfo:
             raz_calcul = datetime.now() - raz_time
             for cle, valeur in data.items():
                 if cle in data_temp:
-                    if ((data[cle] != data_temp[cle]) or (raz_calcul.seconds > 55)):
+                    if ((data[cle] != data_temp[cle]) or (cle[:5] == 'SINST') or (cle == 'PAPP') or (raz_calcul.seconds > 55)): # si la valeur a changé ou si c'est une puissance instantanée ou si plus de 55 secondes depuis le dernier envoi on envoie
                         if cle[:3] == 'EAS' or cle[:3] == 'EAI':                     # test si on a affaire à un index commençant par EAI ou EAS (EAIT, EASF??, ...)
                             if (int(data[cle]) > int(data_temp[cle])) and (int(data[cle]) < (int(data_temp[cle]) + 10000)):    #s i la valeur relevée est plus grande que celle en mémoire et qu'elle n'est pas 10 kwh au dessus c'est ok
                                 _SendData[cle] = valeur

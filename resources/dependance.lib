@@ -449,18 +449,27 @@ fix_certif_chain_issue_mdrjr() {
 add_fix_handler "Certificate verification failed: The certificate is NOT trusted. The certificate chain uses expired certificate.  Could not handshake: Error in the certificate verification. [IP: 216.155.132.189 443]" "*Error in the certificate verification on oph.mdrjr.net" fix_certif_chain_issue_mdrjr
 
 # fix armbian.com not available for buster anymore (same fix than the Atlas plugin does) :
-add_fix_handler "The repository 'http://apt.armbian.com buster Release' \(no longer has\|does not have\) a Release file." "" "sudo sed -i 's|^deb http://apt.armbian.com|#deb http://apt.armbian.com|g' /etc/apt/sources.list.d/armbian.list"
-add_fix_handler "Le dépôt http://apt.armbian.com buster Release ne contient plus de fichier Release." "" "sudo sed -i 's|^deb http://apt.armbian.com|#deb http://apt.armbian.com|g' /etc/apt/sources.list.d/armbian.list"
+add_fix_handler "The repository 'http\?://apt.armbian.com buster Release' \(no longer has\|does not have\) a Release file." "" "sudo sed -i 's|^deb http\(s\?\)://apt.armbian.com|#deb http\1://apt.armbian.com|g' /etc/apt/sources.list.d/armbian.list"
+add_fix_handler "Le dépôt http\?://apt.armbian.com buster Release ne contient plus de fichier Release." "" "sudo sed -i 's|^deb http\(s\?\)://apt.armbian.com|#deb http\1://apt.armbian.com|g' /etc/apt/sources.list.d/armbian.list"
 
 # fix buster-backports not available anymore :
 fix_buster_backport_not_available() {
 	if [ -f /etc/apt/sources.list.d/buster-backports.list ]; then
-		sudo sed -i 's|^deb-src http://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb-src http://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list.d/buster-backports.list
-		sudo sed -i 's|^deb http://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb http://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list.d/buster-backports.list
+		sudo sed -i 's|^deb\(-src\)\? http\(s\?\)://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb\1 http\2://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list.d/buster-backports.list
 	else
-		sudo sed -i 's|^deb-src http://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb-src http://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list
-		sudo sed -i 's|^deb http://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb http://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list
+		sudo sed -i 's|^deb\(-src\)\? http\(s\?\)://[a-zA-Z0-9.-]\+\.debian\.org/debian buster-backports|deb\1 http\2://archive.debian.org/debian buster-backports|g' /etc/apt/sources.list
 	fi
 }
-add_fix_handler "The repository 'http://[[:alnum:].-]\+\.debian\.org/debian buster-backports Release' \(no longer has\|does not have\) a Release file." "*The repository buster-backports no longer has/does not have a Release file." fix_buster_backport_not_available
-add_fix_handler "Le dépôt http://[[:alnum:].-]\+\.debian\.org/debian buster-backports Release ne contient plus de fichier Release." "*Le dépôt buster-backports ne contient plus de fichier Release." fix_buster_backport_not_available
+add_fix_handler "The repository 'https\?://[[:alnum:].-]\+\.debian\.org/debian buster-backports Release' \(no longer has\|does not have\) a Release file." "*The repository buster-backports no longer has/does not have a Release file." fix_buster_backport_not_available
+add_fix_handler "Le dépôt https\?://[[:alnum:].-]\+\.debian\.org/debian buster-backports Release ne contient plus de fichier Release." "*Le dépôt buster-backports ne contient plus de fichier Release." fix_buster_backport_not_available
+
+# fix bullseye-backports not available anymore :
+fix_bullseye_backport_not_available() {
+	if [ -f /etc/apt/sources.list.d/bullseye-backports.list ]; then
+		sudo sed -i 's|^deb\(-src\)\? http\(s\?\)://[a-zA-Z0-9.-]\+\.debian\.org/debian *bullseye-backports|deb\1 http\2://archive.debian.org/debian bullseye-backports|g' /etc/apt/sources.list.d/bullseye-backports.list
+	else
+		sudo sed -i 's|^deb\(-src\)\? http\(s\?\)://[a-zA-Z0-9.-]\+\.debian\.org/debian *bullseye-backports|deb\1 http\2://archive.debian.org/debian bullseye-backports|g' /etc/apt/sources.list
+	fi
+}
+add_fix_handler "The repository 'https\?://[[:alnum:].-]\+\.debian\.org/debian bullseye-backports Release' \(no longer has\|does not have\) a Release file." "*The repository bullseye-backports no longer has/does not have a Release file." fix_bullseye_backport_not_available
+add_fix_handler "Le dépôt https\?://[[:alnum:].-]\+\.debian\.org/debian bullseye-backports Release ne contient plus de fichier Release." "*Le dépôt bullseye-backports ne contient plus de fichier Release." fix_bullseye_backport_not_available

@@ -11,6 +11,11 @@ Pour toutes demandes :
  - [Changelog version stable](https://github.com/Noyax-37/plugin-teleinfo/blob/master/docs/fr_FR/changelog.md)
  - [Changelog version bêta](https://github.com/Noyax-37/plugin-teleinfo/blob/develop/docs/fr_FR/changelog.md)
 
+Si vous souhaitez me payer un café par Paypal: [Offrir un café](https://www.paypal.com/donate/?hosted_button_id=JD64LAEUMUWMU)
+
+## 5.0.0
+- création d'un template pour téléinfo
+- correction de petits bugs
 
 ## 4.9.7
 - correction erreur lors de la modification mqtt de la version 4.9.5 pour les wifiTIC

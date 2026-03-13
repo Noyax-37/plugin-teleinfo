@@ -2523,11 +2523,11 @@ class teleinfo extends eqLogic
                 foreach ($eqLogic->getCmd('info') as $cmd) {
                     if ($cmd->getConfiguration('type') == "data" || $cmd->getConfiguration('type') == "") {
                         if (strpos($indexConsoHP, $cmd->getConfiguration('info_conso')) !== false) {
-                            $ppapHp += $cmd->execCmd();
+                            $ppapHp += (int)$cmd->execCmd();
 							log::add('teleinfo', 'debug', 'Compteur ' . $cptId . ' HP : ' . $cmd->getId() . ' Valeur: ' . $ppapHp);
                         }
                         if (strpos($indexConsoHC, $cmd->getConfiguration('info_conso')) !== false) {
-                            $ppapHc += $cmd->execCmd();
+                            $ppapHc += (int)$cmd->execCmd();
 							log::add('teleinfo', 'debug', 'Compteur ' . $cptId . ' HC : ' . $cmd->getId() . ' Valeur: ' . $ppapHc);
                         }
                     }
@@ -2535,8 +2535,8 @@ class teleinfo extends eqLogic
                 $cacheHc        = cache::byKey('teleinfo::ppap_manuelle::' . $cptId . '::hc', false);
                 $datetimeMesure = date_create($cacheHc->getDatetime());
                 $cacheHp        = cache::byKey('teleinfo::ppap_manuelle::' . $cptId . '::hp', false);
-                $cacheHc        = $cacheHc->getValue();
-                $cacheHp        = $cacheHp->getValue();
+                $cacheHc = is_object($cacheHc) ? $cacheHc->getValue() : 0;
+                $cacheHp = is_object($cacheHp) ? $cacheHp->getValue() : 0;
                 $datetimeMesure = $datetimeMesure->getTimestamp();
                 $datetime2      = time();
                 $interval       = (float)$datetime2 - (float)$datetimeMesure;
@@ -2882,6 +2882,702 @@ class teleinfo extends eqLogic
           ));
         return array('script' => __DIR__ . '/../../resources/install_apt.sh ' . jeedom::getTmpFolder(__CLASS__) . '/dependance', 'log' => log::getPathToLog($depLogFile));
       }
+
+
+// Permet de modifier l'affichage du widget (également utilisable par les commandes)
+public function toHtml($_version = 'dashboard', $eqLogic = null) {
+    // Récupérer l'équipement si non fourni
+    if ($eqLogic === null) {
+        $eqLogic = $this;
+    }
+    
+    // Vérifier les conditions d'affichage du widget personnalisé
+    $newIndex = $eqLogic->getConfiguration('newIndex', 0);
+    $usePluginTemplate = $eqLogic->getConfiguration('usePluginTemplate', 0);
+    
+    // Si les conditions ne sont pas remplies, utiliser le template par défaut
+    if ($newIndex != 1 || $usePluginTemplate != 1) {
+        return parent::toHtml($_version);
+    }
+    
+    // Déterminer le mode (standard ou historique)
+    $linky = $eqLogic->getConfiguration('linky', 0);
+    $isStandardMode = ($linky == 1);
+    
+    // Vérifier si le mode production est activé
+    $activationProduction = intval($eqLogic->getConfiguration('ActivationProduction', 0));
+    $hasProduction = $isStandardMode && ($activationProduction == 1);
+    
+    // Vérifier si l'affichage de toutes les commandes est activé
+    $displayAll = intval($eqLogic->getConfiguration('display_all', 0));
+    $hasAllCmds = ($displayAll == 1);
+    
+    // === VÉRIFIER SI LE PANEL EST ACTIVÉ ===
+    $displayDesktopPanel = (config::byKey('displayDesktopPanel', 'teleinfo') == 1);
+    
+    // === RÉCUPÉRER LES INFORMATIONS D'ABONNEMENT ET TARIF ===
+    $subscriptionName = '--';
+    $subscriptionCmdId = '';
+    $subscriptionCollectDate = '';
+    $subscriptionValueDate = '';
+    $currentTarif = '--';
+    $tarifCmdId = '';
+    $tarifCollectDate = '';
+    $tarifValueDate = '';
+    $tarifClass = 'tarif-standard';
+    
+    if ($isStandardMode) {
+        // Mode Standard: NGTF (nom abonnement) et LTARF (tarif en cours)
+        $cmdNGTF = $eqLogic->getCmd('info', 'NGTF');
+        $cmdLTARF = $eqLogic->getCmd('info', 'LTARF');
+        
+        if (is_object($cmdNGTF)) {
+            $subscriptionName = $cmdNGTF->execCmd();
+            $subscriptionCmdId = $cmdNGTF->getId();
+            $subscriptionCollectDate = $cmdNGTF->getCollectDate();
+            $subscriptionValueDate = $cmdNGTF->getValueDate();
+        }
+        if (is_object($cmdLTARF)) {
+            $currentTarif = $cmdLTARF->execCmd();
+            $tarifCmdId = $cmdLTARF->getId();
+            $tarifCollectDate = $cmdLTARF->getCollectDate();
+            $tarifValueDate = $cmdLTARF->getValueDate();
+            $tarifClass = $this->getTarifClass($currentTarif);
+        }
+    } else {
+        // Mode Historique: OPTARIF (abonnement) et PTEC (tarif en cours)
+        $cmdOPTARIF = $eqLogic->getCmd('info', 'OPTARIF');
+        $cmdPTEC = $eqLogic->getCmd('info', 'PTEC');
+        
+        if (is_object($cmdOPTARIF)) {
+            $subscriptionName = $cmdOPTARIF->execCmd();
+            $subscriptionCmdId = $cmdOPTARIF->getId();
+            $subscriptionCollectDate = $cmdOPTARIF->getCollectDate();
+            $subscriptionValueDate = $cmdOPTARIF->getValueDate();
+        }
+        if (is_object($cmdPTEC)) {
+            $currentTarif = $cmdPTEC->execCmd();
+            $tarifCmdId = $cmdPTEC->getId();
+            $tarifCollectDate = $cmdPTEC->getCollectDate();
+            $tarifValueDate = $cmdPTEC->getValueDate();
+            $tarifClass = $this->getTarifClass($currentTarif);
+        }
+    }
+
+    // === GÉNÉRER LE HTML DU BOUTON PANEL ===
+    $panelButtonHtml = '';
+    if ($displayDesktopPanel) {
+        $panelUrl = 'index.php?m=teleinfo&p=panel';
+        $panelButtonHtml = '<a href="' . $panelUrl . '" class="teleinfo-panel-button" target="_blank">
+            <i class="fa fa-chart-bar"></i> Panel Téléinfo
+        </a>';
+    }
+
+    // Récupérer les données des index
+    $indexData = $this->getIndexDataForWidget($eqLogic, $isStandardMode);
+    
+    // Générer les lignes du tableau
+    $indexTableRows = $this->generateIndexTableRows($indexData);
+    
+    // Calculer les totaux consommation
+    $totalConsoToday = 0;
+    $totalCoutToday = 0;
+    
+    if ($isStandardMode) {
+        // En mode standard, EAST contient déjà le total
+        if (isset($indexData[0])) {
+            $totalConsoToday = floatval($indexData[0]['conso_today']) / 1000;
+            $totalCoutToday = floatval($indexData[0]['cout_today']);
+        }
+    } else {
+        // En mode historique, sommer tous les index affichés
+        foreach ($indexData as $index) {
+            if ($index['display']) {
+                $totalConsoToday += floatval($index['conso_today']) / 1000;
+                $totalCoutToday += floatval($index['cout_today']);
+            }
+        }
+    }
+    
+    // === VUMÈTRE CONSOMMATION ===
+    $pappCmdId = '';
+    $pappValue = 0;
+    $pappLabel = 'Puissance';
+    $pappCollectDate = '';
+    $pappValueDate = '';
+    $pappMax = intval($eqLogic->getConfiguration('pmax', 12000));
+    if ($pappMax <= 0) {
+        $pappMax = 12000;
+    }
+    
+    if ($isStandardMode) {
+        $pappCmd = $eqLogic->getCmd('info', 'SINSTS');
+        $pappLabel = 'SINSTS';
+    } else {
+        $pappCmd = $eqLogic->getCmd('info', 'PAPP');
+        $pappLabel = 'PAPP';
+    }
+    
+    if (is_object($pappCmd)) {
+        $pappCmdId = $pappCmd->getId();
+        $pappValue = floatval($pappCmd->execCmd());
+        $pappCollectDate = $pappCmd->getCollectDate();
+        $pappValueDate = $pappCmd->getValueDate();
+    }
+    
+    $pappPercent = min(($pappValue / $pappMax) * 100, 100);
+    $pappBarClass = 'low';
+    if ($pappPercent >= 85) {
+        $pappBarClass = 'critical';
+    } elseif ($pappPercent >= 60) {
+        $pappBarClass = 'high';
+    } elseif ($pappPercent >= 30) {
+        $pappBarClass = 'medium';
+    }
+    
+    // === SECTION PRODUCTION ===
+    $productionSectionHtml = '';
+    $sinstiCmdId = '';
+    $sinstiValue = 0;
+    $sinstiCollectDate = '';
+    $sinstiValueDate = '';
+    $sinstiMax = 0;
+    $sinstiPercent = 0;
+    $sinstiBarClass = 'injection-low';
+    $eaitCmdId = '';
+    $eaitValue = 0;
+    $eaitCollectDate = '';
+    $eaitValueDate = '';
+    $statProdCmdId = '';
+    $statProdValue = 0;
+    $statProdCollectDate = '';
+    $statProdValueDate = '';
+    $coutProdKwh = 0;
+    
+    if ($hasProduction) {
+        // --- Vumètre SINSTI ---
+        $sinstiMax = intval($eqLogic->getConfiguration('sinsti_max', 12000));
+        if ($sinstiMax <= 0) {
+            $sinstiMax = 12000;
+        }
+        
+        $sinstiCmd = $eqLogic->getCmd('info', 'SINSTI');
+        if (is_object($sinstiCmd)) {
+            $sinstiCmdId = $sinstiCmd->getId();
+            $sinstiValue = floatval($sinstiCmd->execCmd());
+            $sinstiCollectDate = $sinstiCmd->getCollectDate();
+            $sinstiValueDate = $sinstiCmd->getValueDate();
+        }
+        
+        $sinstiPercent = min(($sinstiValue / $sinstiMax) * 100, 100);
+        $sinstiBarClass = 'injection-low';
+        if ($sinstiPercent >= 85) {
+            $sinstiBarClass = 'injection-critical';
+        } elseif ($sinstiPercent >= 60) {
+            $sinstiBarClass = 'injection-high';
+        } elseif ($sinstiPercent >= 30) {
+            $sinstiBarClass = 'injection-medium';
+        }
+        
+        // --- Index EAIT ---
+        $eaitCmd = $eqLogic->getCmd('info', 'EAIT');
+        if (is_object($eaitCmd)) {
+            $eaitCmdId = $eaitCmd->getId();
+            $eaitValue = floatval($eaitCmd->execCmd());
+            $eaitCollectDate = $eaitCmd->getCollectDate();
+            $eaitValueDate = $eaitCmd->getValueDate();
+        }
+        
+        // --- Stat production du jour ---
+        $statProdCmd = $eqLogic->getCmd('info', 'STAT_TODAY_PROD');
+        if (is_object($statProdCmd)) {
+            $statProdCmdId = $statProdCmd->getId();
+            $statProdValue = floatval($statProdCmd->execCmd());
+            $statProdCollectDate = $statProdCmd->getCollectDate();
+            $statProdValueDate = $statProdCmd->getValueDate();
+        }
+        
+        // --- Coût production au kWh ---
+        $coutProdKwh = floatval($eqLogic->getConfiguration('CoutindexProd', 0));
+        $statProdCoutValue = ($statProdValue / 1000) * $coutProdKwh;
+        
+        // Générer le HTML de la section production
+        $productionSectionHtml = '<div class="teleinfo-section prod" id="section-prod-' . $eqLogic->getId() . '">
+            <div class="section-header">
+                <span class="section-title">Production (Injection)</span>
+                <span class="section-badge badge-prod">Prod</span>
+            </div>
+            
+            <!-- Vumètre Puissance Injection -->
+            <div class="teleinfo-vumeter" id="vumeter-prod-' . $eqLogic->getId() . '">
+                <div class="vumeter-header">
+                    <span class="vumeter-label">SINSTI</span>
+                    <span class="vumeter-value tooltip-trigger" 
+                          id="sinsti-value-' . $eqLogic->getId() . '" 
+                          data-collect-date="' . htmlspecialchars($sinstiCollectDate) . '"
+                          data-value-date="' . htmlspecialchars($sinstiValueDate) . '">' . $this->formatNumber($sinstiValue, 0) . ' VA</span>
+                </div>
+                <div class="vumeter-bar-container">
+                    <div class="vumeter-bar ' . $sinstiBarClass . '" id="sinsti-bar-' . $eqLogic->getId() . '" style="width: ' . number_format($sinstiPercent, 1, '.', '') . '%;"></div>
+                </div>
+                <div class="vumeter-scale">
+                    <span>0</span>
+                    <span>' . $sinstiMax . ' VA</span>
+                </div>
+            </div>
+            
+            <!-- Tableau Production -->
+            <table class="teleinfo-table">
+                <thead>
+                    <tr>
+                        <th class="index-name">Index</th>
+                        <th class="index-value">Valeur</th>
+                        <th class="index-conso">Inj. Jour</th>
+                        <th class="index-cout">Revenu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="index-row">
+                        <td class="index-name">EAIT</td>
+                        <td class="index-value"><span class="value-number tooltip-trigger" 
+                                                      id="eait-value-' . $eqLogic->getId() . '"
+                                                      data-collect-date="' . htmlspecialchars($eaitCollectDate) . '"
+                                                      data-value-date="' . htmlspecialchars($eaitValueDate) . '">' . $this->formatNumber($eaitValue, 0) . '</span></td>
+                        <td class="index-conso"><span class="conso-number tooltip-trigger" 
+                                                      id="prod-conso-' . $eqLogic->getId() . '"
+                                                      data-collect-date="' . htmlspecialchars($statProdCollectDate) . '"
+                                                      data-value-date="' . htmlspecialchars($statProdValueDate) . '">' . $this->formatNumber($statProdValue / 1000, 2) . ' kWh</span></td>
+                        <td class="index-cout"><span class="cout-number" id="prod-cout-' . $eqLogic->getId() . '">' . $this->formatNumber($statProdCoutValue, 2) . ' €</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Total Production -->
+            <div class="teleinfo-total-row">
+                <div class="total-item total-conso">
+                    <span class="total-label">Injection Jour</span>
+                    <span class="total-value" id="total-prod-' . $eqLogic->getId() . '">' . $this->formatNumber($statProdValue / 1000, 2) . ' kWh</span>
+                </div>
+                <div class="total-item total-cout">
+                    <span class="total-label">Revenu</span>
+                    <span class="total-value" id="total-prod-cout-' . $eqLogic->getId() . '">' . $this->formatNumber($statProdCoutValue, 2) . ' €</span>
+                </div>
+            </div>
+        </div>';
+    }
+    
+    // === SECTION TOUTES LES COMMANDES ===
+    $allCmdsSectionHtml = '';
+    $allCmdsData = array();
+    
+    if ($hasAllCmds) {
+        // Récupérer toutes les commandes visibles de type info
+        $allCmdsTableRows = '';
+        $cmdIndex = 0;
+        
+        foreach ($eqLogic->getCmd('info') as $cmd) {
+            // Vérifier si la commande est visible
+            if ($cmd->getIsVisible() != 1) {
+                continue;
+            }
+            
+            $cmdId = $cmd->getId();
+            $cmdName = $cmd->getName();
+            $cmdValue = $cmd->execCmd();
+            $cmdUnit = $cmd->getUnite();
+            $cmdSubType = $cmd->getSubType();
+            $cmdCollectDate = $cmd->getCollectDate();
+            $cmdValueDate = $cmd->getValueDate();
+            
+            // Formater la valeur selon le sous-type
+            $displayValue = $cmdValue;
+            $decimals = 0;
+            
+            if ($cmdSubType === 'numeric') {
+                $decimals = (strpos(strval($cmdValue), '.') !== false) ? 2 : 0;
+                $displayValue = $this->formatNumber(floatval($cmdValue), $decimals);
+            }
+            
+            // Stocker les données pour le JavaScript
+            $allCmdsData[$cmdIndex] = array(
+                'id' => $cmdId,
+                'name' => $cmdName,
+                'value' => $cmdValue,
+                'unit' => $cmdUnit,
+                'subtype' => $cmdSubType,
+                'decimals' => $decimals,
+                'collectDate' => $cmdCollectDate,
+                'valueDate' => $cmdValueDate
+            );
+            
+            // Générer la ligne du tableau
+            $allCmdsTableRows .= '<tr class="all-cmds-row" data-cmd-id="' . $cmdId . '">
+                <td class="cmd-name">' . $cmdName . '</td>
+                <td class="cmd-value"><span class="tooltip-trigger" 
+                                           id="all-cmd-value-' . $cmdId . '"
+                                           data-collect-date="' . htmlspecialchars($cmdCollectDate) . '"
+                                           data-value-date="' . htmlspecialchars($cmdValueDate) . '">' . $displayValue . '</span></td>
+                <td class="cmd-unit">' . $cmdUnit . '</td>
+            </tr>';
+            
+            $cmdIndex++;
+        }
+        
+        // Générer le HTML de la section si des commandes ont été trouvées
+        if (!empty($allCmdsTableRows)) {
+            $allCmdsSectionHtml = '<div class="teleinfo-section all-cmds" id="section-all-cmds-' . $eqLogic->getId() . '">
+                <div class="section-header">
+                    <span class="section-title">Toutes les commandes</span>
+                    <span class="section-badge badge-all">' . $cmdIndex . ' cmd</span>
+                </div>
+                
+                <table class="all-cmds-table">
+                    <thead>
+                        <tr>
+                            <th class="cmd-name">Nom</th>
+                            <th class="cmd-value">Valeur</th>
+                            <th class="cmd-unit">Unité</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ' . $allCmdsTableRows . '
+                    </tbody>
+                </table>
+            </div>';
+        }
+    }
+
+    //personnalisation de quelques éléments du template
+    $vumeterFontSize = $eqLogic->getConfiguration('vumeter_font_size', '0.95em');
+    if(empty($vumeterFontSize)){
+        $vumeterFontSize = '0.95em';
+    }
+
+    $valueColor = $eqLogic->getConfiguration('value_color', '#2c3e50');
+    if (empty($valueColor)) {
+        $valueColor = '#2c3e50'; // Couleur par défaut
+    }
+
+    // Préparer les replacements pour le template
+    $replace = array(
+        // Placeholders standards Jeedom
+        '#id#' => $eqLogic->getId(),
+        '#name#' => $eqLogic->getName(),
+        '#name_display#' => $eqLogic->getName(),
+        '#eqLink#' => $eqLogic->getLinkToConfiguration(),
+        '#eqType#' => 'teleinfo',
+        '#uid#' => 'teleinfo_' . $eqLogic->getId() . '_' . mt_rand(),
+        '#version#' => $_version,
+        '#width#' => $eqLogic->getDisplay('width', '250px'),
+        '#height#' => $eqLogic->getDisplay('height', 'auto'),
+        '#style#' => $eqLogic->getDisplay('style', ''),
+        '#class#' => $eqLogic->getDisplay('widget_class', ''),
+        '#eqLogic_class#' => $eqLogic->getConfiguration('class', ''),
+        '#object_name#' => is_object($eqLogic->getObject()) ? $eqLogic->getObject()->getName() : '',
+        
+        // Données du tableau consommation
+        '#index_table_rows#' => $indexTableRows,
+        '#index_data#' => json_encode($indexData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+        
+        // Totaux consommation
+        '#total_conso_today#' => $this->formatNumber($totalConsoToday, 2),
+        '#total_cout_today#' => $this->formatNumber($totalCoutToday, 2) . ' €',
+        
+        // Mode
+        '#is_standard_mode#' => $isStandardMode ? 'badge-standard' : 'badge-historique',
+        '#is_standard_mode_label#' => $isStandardMode ? 'Standard' : 'Historique',
+        '#is_standard_mode_js#' => $isStandardMode ? 'true' : 'false',
+        
+        // Abonnement et tarif
+        '#subscription_name#' => $subscriptionName,
+        '#subscription_cmd_id#' => strval($subscriptionCmdId),
+        '#subscription_collect_date#' => htmlspecialchars($subscriptionCollectDate),
+        '#subscription_value_date#' => htmlspecialchars($subscriptionValueDate),
+        '#current_tarif#' => $currentTarif,
+        '#tarif_cmd_id#' => strval($tarifCmdId),
+        '#tarif_collect_date#' => htmlspecialchars($tarifCollectDate),
+        '#tarif_value_date#' => htmlspecialchars($tarifValueDate),
+        '#tarif_class#' => $tarifClass,
+        
+        // Vumètre consommation
+        '#papp_cmd_id#' => strval($pappCmdId),
+        '#papp_value#' => $this->formatNumber($pappValue, 0),
+        '#papp_percent#' => number_format($pappPercent, 1, '.', ''),
+        '#papp_max#' => strval($pappMax),
+        '#papp_label#' => $pappLabel,
+        '#papp_bar_class#' => $pappBarClass,
+        '#papp_collect_date#' => htmlspecialchars($pappCollectDate),
+        '#papp_value_date#' => htmlspecialchars($pappValueDate),
+        
+        // Production
+        '#has_production#' => $hasProduction ? 'true' : 'false',
+        '#production_section_html#' => $productionSectionHtml,
+        '#sinsti_cmd_id#' => strval($sinstiCmdId),
+        '#sinsti_max#' => strval($sinstiMax),
+        '#eait_cmd_id#' => strval($eaitCmdId),
+        '#stat_prod_cmd_id#' => strval($statProdCmdId),
+        '#cout_prod_kwh#' => strval($coutProdKwh),
+        
+        // Toutes les commandes
+        '#has_all_cmds#' => $hasAllCmds ? 'true' : 'false',
+        '#all_cmds_section_html#' => $allCmdsSectionHtml,
+        '#all_cmds_data#' => json_encode($allCmdsData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+        
+        // Bouton Panel
+        '#panel_button_html#' => $panelButtonHtml,
+
+        // Personnalisation du template
+        '#vumeter_font_size#' => $vumeterFontSize,
+        '#value_color#' => $valueColor,
+    );
+    
+    $html = template_replace($replace, getTemplate('core', $_version, 'teleinfo.template', __CLASS__));
+    return $eqLogic->postToHtml($_version, $html);
+}
+
+/**
+ * Détermine la classe CSS pour le badge tarif
+ * 
+ * @param string $tarif Le tarif en cours
+ * @return string La classe CSS
+ */
+private function getTarifClass($tarif) {
+    if (empty($tarif)) {
+        return 'tarif-standard';
+    }
+
+    $tarif = strtoupper($tarif);
+    
+    // === TEMPO: Vérifier les COULEURS en PREMIER (la couleur prime sur HP/HC) ===
+    // Tempo - Bleu (prix bas)
+    if (strpos($tarif, 'BLEU') !== false || strpos($tarif, 'JB') !== false) {
+        return 'tarif-bleu';
+    }
+    // Tempo - Blanc (prix moyen)
+    if (strpos($tarif, 'BLANC') !== false || strpos($tarif, 'JW') !== false) {
+        return 'tarif-blanc';
+    }
+    // Tempo - Rouge (prix élevé)
+    if (strpos($tarif, 'ROUGE') !== false || strpos($tarif, 'JR') !== false) {
+        return 'tarif-rouge';
+    }
+    
+    // === TYPES CLASSIQUES HP/HC ===
+    // Heures Pleines
+    if (strpos($tarif, 'HP') !== false) {
+        return 'tarif-hp';
+    }
+    // Heures Creuses
+    if (strpos($tarif, 'HC') !== false) {
+        return 'tarif-hc';
+    }
+    // Heures de pointe
+    if (strpos($tarif, 'PM') !== false) {
+        return 'tarif-pointe';
+    }
+    
+    // Standard (BASE, etc.) ou inconnu
+    return 'tarif-standard';
+}
+
+/**
+ * Récupère les données des index pour le widget
+ * 
+ * @param eqLogic $eqLogic L'équipement
+ * @param bool $isStandardMode Mode standard (true) ou historique (false)
+ * @return array Tableau des données d'index
+ */
+private function getIndexDataForWidget($eqLogic, $isStandardMode) {
+    $indexData = array();
+    $hasConfiguredIndexes = false;
+    
+    // === D'ABORD: Vérifier si des index sont configurés (01 à 10) ===
+    for ($i = 1; $i <= 10; $i++) {
+        $indexNum = str_pad($i, 2, '0', STR_PAD_LEFT);
+        $indexName = $eqLogic->getConfiguration('index' . $indexNum, '');
+        
+        if (!empty($indexName)) {
+            $hasConfiguredIndexes = true;
+            break;
+        }
+    }
+    
+    // === INDEX 00: BASE ou EAST ===
+    if ($isStandardMode) {
+        // Mode Standard: EAST toujours présent
+        $index00Name = 'EAST';
+        $cmdIndex00 = $eqLogic->getCmd('info', $index00Name);
+        $cmdStatToday00 = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX00');
+        $cmdCoutToday00 = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX00_COUT');
+        
+        $indexData[0] = array(
+            'name' => $index00Name,
+            'label' => 'Total (EAST)',
+            'cmd_id' => is_object($cmdIndex00) ? $cmdIndex00->getId() : '',
+            'stat_conso_id' => is_object($cmdStatToday00) ? $cmdStatToday00->getId() : '',
+            'stat_cout_id' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getId() : '',
+            'value' => is_object($cmdIndex00) ? $cmdIndex00->execCmd() : 0,
+            'unit' => is_object($cmdIndex00) ? $cmdIndex00->getUnite() : 'Wh',
+            'conso_today' => is_object($cmdStatToday00) ? $cmdStatToday00->execCmd() : 0,
+            'cout_today' => is_object($cmdCoutToday00) ? $cmdCoutToday00->execCmd() : 0,
+            'collect_date' => is_object($cmdIndex00) ? $cmdIndex00->getCollectDate() : '',
+            'value_date' => is_object($cmdIndex00) ? $cmdIndex00->getValueDate() : '',
+            'stat_conso_collect_date' => is_object($cmdStatToday00) ? $cmdStatToday00->getCollectDate() : '',
+            'stat_conso_value_date' => is_object($cmdStatToday00) ? $cmdStatToday00->getValueDate() : '',
+            'stat_cout_collect_date' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getCollectDate() : '',
+            'stat_cout_value_date' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getValueDate() : '',
+            'display' => true,
+            'is_total' => true
+        );
+    } else {
+        // Mode Historique: BASE affiché SEULEMENT si aucun index configuré
+        if (!$hasConfiguredIndexes) {
+            $index00Name = 'BASE';
+            $cmdIndex00 = $eqLogic->getCmd('info', $index00Name);
+            $cmdStatToday00 = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX00');
+            $cmdCoutToday00 = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX00_COUT');
+            
+            $indexData[0] = array(
+                'name' => $index00Name,
+                'label' => 'Total (BASE)',
+                'cmd_id' => is_object($cmdIndex00) ? $cmdIndex00->getId() : '',
+                'stat_conso_id' => is_object($cmdStatToday00) ? $cmdStatToday00->getId() : '',
+                'stat_cout_id' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getId() : '',
+                'value' => is_object($cmdIndex00) ? $cmdIndex00->execCmd() : 0,
+                'unit' => is_object($cmdIndex00) ? $cmdIndex00->getUnite() : 'Wh',
+                'conso_today' => is_object($cmdStatToday00) ? $cmdStatToday00->execCmd() : 0,
+                'cout_today' => is_object($cmdCoutToday00) ? $cmdCoutToday00->execCmd() : 0,
+                'collect_date' => is_object($cmdIndex00) ? $cmdIndex00->getCollectDate() : '',
+                'value_date' => is_object($cmdIndex00) ? $cmdIndex00->getValueDate() : '',
+                'stat_conso_collect_date' => is_object($cmdStatToday00) ? $cmdStatToday00->getCollectDate() : '',
+                'stat_conso_value_date' => is_object($cmdStatToday00) ? $cmdStatToday00->getValueDate() : '',
+                'stat_cout_collect_date' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getCollectDate() : '',
+                'stat_cout_value_date' => is_object($cmdCoutToday00) ? $cmdCoutToday00->getValueDate() : '',
+                'display' => true,
+                'is_total' => true
+            );
+        }
+    }
+    
+    // === INDEX 01 à 10 - Uniquement si configurés ===
+    for ($i = 1; $i <= 10; $i++) {
+        $indexNum = str_pad($i, 2, '0', STR_PAD_LEFT);
+        $indexName = $eqLogic->getConfiguration('index' . $indexNum, '');
+        
+        // Ne pas afficher si le nom de l'index est vide
+        if (empty($indexName)) {
+            continue;
+        }
+        
+        // Récupérer la commande de l'index
+        $cmdIndex = null;
+        foreach ($eqLogic->getCmd('info') as $cmd) {
+            if ($cmd->getConfiguration('info_conso') == $indexName) {
+                $cmdIndex = $cmd;
+                break;
+            }
+        }
+        
+        // Récupérer les statistiques du jour
+        $cmdStatToday = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX' . $indexNum);
+        $cmdCoutToday = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX' . $indexNum . '_COUT');
+        
+        // Récupérer le coût au kWh configuré
+        $coutKwh = $eqLogic->getConfiguration('Coutindex' . $indexNum, 0);
+
+        // Récupérer le nom des index
+        $labelName = $eqLogic->getConfiguration('index' . $indexNum . '_nom', 'pas de nom');
+        
+        $indexData[$i] = array(
+            'name' => $indexName,
+            'label' => $labelName,
+            'cmd_id' => is_object($cmdIndex) ? $cmdIndex->getId() : '',
+            'stat_conso_id' => is_object($cmdStatToday) ? $cmdStatToday->getId() : '',
+            'stat_cout_id' => is_object($cmdCoutToday) ? $cmdCoutToday->getId() : '',
+            'value' => is_object($cmdIndex) ? $cmdIndex->execCmd() : 0,
+            'unit' => is_object($cmdIndex) ? $cmdIndex->getUnite() : 'Wh',
+            'conso_today' => is_object($cmdStatToday) ? $cmdStatToday->execCmd() : 0,
+            'cout_today' => is_object($cmdCoutToday) ? $cmdCoutToday->execCmd() : 0,
+            'cout_kwh' => $coutKwh,
+            'collect_date' => is_object($cmdIndex) ? $cmdIndex->getCollectDate() : '',
+            'value_date' => is_object($cmdIndex) ? $cmdIndex->getValueDate() : '',
+            'stat_conso_collect_date' => is_object($cmdStatToday) ? $cmdStatToday->getCollectDate() : '',
+            'stat_conso_value_date' => is_object($cmdStatToday) ? $cmdStatToday->getValueDate() : '',
+            'stat_cout_collect_date' => is_object($cmdCoutToday) ? $cmdCoutToday->getCollectDate() : '',
+            'stat_cout_value_date' => is_object($cmdCoutToday) ? $cmdCoutToday->getValueDate() : '',
+            'display' => true,
+            'is_total' => false
+        );
+    }
+    
+    return $indexData;
+}
+
+/**
+ * Formate un nombre pour l'affichage
+ * 
+ * @param float $value La valeur à formater
+ * @param int $decimals Nombre de décimales
+ * @return string La valeur formatée
+ */
+private function formatNumber($value, $decimals = 0) {
+    return number_format($value, $decimals, ',', ' ');
+}
+
+/**
+ * Génère les lignes HTML du tableau des index
+ * 
+ * @param array $indexData Les données des index
+ * @return string Le HTML des lignes du tableau
+ */
+private function generateIndexTableRows($indexData) {
+    $html = '';
+    
+    foreach ($indexData as $key => $index) {
+        if (!$index['display']) {
+            continue;
+        }
+        
+        $rowClass = isset($index['is_total']) && $index['is_total'] ? 'index-total-row' : 'index-row';
+        
+        // Convertir la valeur en kWh si elle est en Wh
+        $valueWh = floatval($index['value']);
+        $valueKwh = $valueWh;
+        $valueDisplay = $this->formatNumber($valueKwh, 0);
+        
+        // Formater la consommation du jour en kWh
+        $consoToday = floatval($index['conso_today']);
+        $consoTodayKwh = $consoToday / 1000;
+        $consoDisplay = $this->formatNumber($consoTodayKwh, 2) . ' kWh';
+        
+        // Formater le coût
+        $coutDisplay = $this->formatNumber(floatval($index['cout_today']), 2) . ' €';
+        
+        // Générer le lien vers la commande si disponible
+        $nameDisplay = $index['label'];
+        if (!empty($index['cmd_id'])) {
+            $nameDisplay = '<span class="cmd-widget" data-cmd_id="' . $index['cmd_id'] . '">' . $index['label'] . '</span>';
+        }
+        
+        $html .= '<tr class="' . $rowClass . '" data-row-index="' . $key . '">';
+        $html .= '<td class="index-name">' . $nameDisplay . '</td>';
+        $html .= '<td class="index-value"><span class="value-number tooltip-trigger" 
+                                                    data-collect-date="' . htmlspecialchars($index['collect_date']) . '"
+                                                    data-value-date="' . htmlspecialchars($index['value_date']) . '">' . $valueDisplay . '</span></td>';
+        $html .= '<td class="index-conso"><span class="conso-number tooltip-trigger" 
+                                                    data-collect-date="' . htmlspecialchars($index['stat_conso_collect_date']) . '"
+                                                    data-value-date="' . htmlspecialchars($index['stat_conso_value_date']) . '">' . $consoDisplay . '</span></td>';
+        $html .= '<td class="index-cout"><span class="cout-number tooltip-trigger" 
+                                                    data-collect-date="' . htmlspecialchars($index['stat_cout_collect_date']) . '"
+                                                    data-value-date="' . htmlspecialchars($index['stat_cout_value_date']) . '">' . $coutDisplay . '</span></td>';
+        $html .= '</tr>';
+    }
+    
+    return $html;
+}
+
+
+
     
 }
 

@@ -309,52 +309,58 @@ function loadData(){
                 $('.coutsgraph').show();
                 newIndex = true;
                 index[0] = true;
-                index_nom = ['Global',
-                            data.result[globalEqLogic].configuration.index01_nom,
-                            data.result[globalEqLogic].configuration.index02_nom,
-                            data.result[globalEqLogic].configuration.index03_nom,
-                            data.result[globalEqLogic].configuration.index04_nom,
-                            data.result[globalEqLogic].configuration.index05_nom,
-                            data.result[globalEqLogic].configuration.index06_nom,
-                            data.result[globalEqLogic].configuration.index07_nom,
-                            data.result[globalEqLogic].configuration.index08_nom,
-                            data.result[globalEqLogic].configuration.index09_nom,
-                            data.result[globalEqLogic].configuration.index10_nom];
-                index_cout = [Number(data.result[globalEqLogic].configuration.Coutindex00),
-                            Number(data.result[globalEqLogic].configuration.Coutindex01),
-                            Number(data.result[globalEqLogic].configuration.Coutindex02),
-                            Number(data.result[globalEqLogic].configuration.Coutindex03),
-                            Number(data.result[globalEqLogic].configuration.Coutindex04),
-                            Number(data.result[globalEqLogic].configuration.Coutindex05),
-                            Number(data.result[globalEqLogic].configuration.Coutindex06),
-                            Number(data.result[globalEqLogic].configuration.Coutindex07),
-                            Number(data.result[globalEqLogic].configuration.Coutindex08),
-                            Number(data.result[globalEqLogic].configuration.Coutindex09),
-                            Number(data.result[globalEqLogic].configuration.Coutindex10)];
+                const config = data.result[globalEqLogic]?.configuration || {};
+
+                index_nom = [
+                    'Global',
+                    config.index01_nom ?? '',
+                    config.index02_nom ?? '',
+                    config.index03_nom ?? '',
+                    config.index04_nom ?? '',
+                    config.index05_nom ?? '',
+                    config.index06_nom ?? '',
+                    config.index07_nom ?? '',
+                    config.index08_nom ?? '',
+                    config.index09_nom ?? '',
+                    config.index10_nom ?? ''
+                ];
+
+                index_cout = [
+                    Number(config.Coutindex00 ?? 0),
+                    Number(config.Coutindex01 ?? 0),
+                    Number(config.Coutindex02 ?? 0),
+                    Number(config.Coutindex03 ?? 0),
+                    Number(config.Coutindex04 ?? 0),
+                    Number(config.Coutindex05 ?? 0),
+                    Number(config.Coutindex06 ?? 0),
+                    Number(config.Coutindex07 ?? 0),
+                    Number(config.Coutindex08 ?? 0),
+                    Number(config.Coutindex09 ?? 0),
+                    Number(config.Coutindex10 ?? 0)
+                ];
+
                 $('.teleinfoAttr[data-l1key=titre][data-l2key=Index00]').text(index_nom[0]);
 
 
-                for(i=1;i<11;i++){
-                    if (i<10){
-                        var numeroIndex = 'Index0' + i;
-                    }else{
-                        var numeroIndex = 'Index' + i;
-                    }
-                    if(index_nom[i] !== ''){
+                for (let i = 1; i < 11; i++) {
+                    const numeroIndex = i < 10 ? `Index0${i}` : `Index${i}`;
+                    
+                    if (index_nom[i]?.trim() !== '') {
                         index[i] = true;
-                        y = document.getElementsByClassName(numeroIndex);
-                        for (w = 0; w < y.length; w++) {
-                            y[w].style.display = 'table-cell';
+                        const elements = document.getElementsByClassName(numeroIndex);
+                        for (const el of elements) {
+                            el.style.display = 'table-cell';
                         }
-                        $('.teleinfoAttr[data-l1key=titre][data-l2key=' + numeroIndex + ']').text(index_nom[i]);
-                    }else{
-                        y = document.getElementsByClassName(numeroIndex);
-                        for (w = 0; w < y.length; w++) {
-                            y[w].style.display = 'none';
+                        $(`.teleinfoAttr[data-l1key=titre][data-l2key=${numeroIndex}]`).text(index_nom[i]);
+                    } else {
+                        index[i] = false;
+                        const elements = document.getElementsByClassName(numeroIndex);
+                        for (const el of elements) {
+                            el.style.display = 'none';
                         }
-    
                     }
                 }
+
             }else{
                 newIndex = false;
                 $('.couts').hide();

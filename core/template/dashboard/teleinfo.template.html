@@ -1,796 +1,1135 @@
-<div class="eqLogic eqLogic-widget allowResize allowReorderCmd #custom_layout# #eqLogic_class# #class#"
-  data-eqType="#eqType#" data-eqLogic_id="#id#" data-eqLogic_uid="#uid#" data-version="#version#"
-  data-translate-category="#translate_category#" data-category="#category#" data-tags="#tags#"
-  style="width: #width#;height: #height#;#style#">
-
-  <link rel="stylesheet" href="plugins/teleinfo/3rdparty/swiper/swiper-bundle.min.css" />
-  <!-- <script type="text/javascript" src="plugins/solcast/3rdparty/swiper/swiper-bundle.min.js"></script> -->
-  <!-- <script src="core/php/getJS.php?file=plugins/solcast/3rdparty/swiper/swiper-bundle.min.js"></script> -->
-
-  <center class="widget-name">
-    <span class="warning" title="#alert_name#">
-      <i class='#alert_icon#'></i>
-    </span>
-    <span class="reportModeVisible">#name_display# <span class="object_name">#object_name#</span></span>
-    <a href="#eqLink#" class="reportModeHidden">#name_display# <span class="object_name">#object_name#</span></a>
-  </center>
-
-  <div id="chart-xrange#id#">
-    <div id="chart-xrange-today#id#" class="chart" style="height:170px;"></div>
-    <div id="chart-xrange-tomorrow#id#" class="chart" style="height:170px;"></div>
-  </div>
-
-
-  <!--
-   //////////////////////////////////////
-   // Tableau des données de la journée //
-   //////////////////////////////////////
-   -->
-  <div id="dataTab-#id#" class="cmd cmd-widget"
-    style="text-align: left;margin-left: 5px;margin-right: 24px;margin-top:0px;">
-    <center>
-      <i class="fa">
-        <h1 style="font-size: 14px; font-weight:bold"> Consommation de la journée par index </h1>
-      </i>
+<div class="eqLogic eqLogic-widget allowResize allowReorderCmd teleinfo #eqLogic_class# #class#"
+     data-eqType="#eqType#"
+     data-eqLogic_id="#id#"
+     data-eqLogic_uid="#uid#"
+     data-version="#version#"
+     style="width:#width#; height:#height#; #style#;
+            display: flex; flex-direction: column; overflow: hidden;">
+    
+    <!-- En-tête du widget -->
+    <center class="widget-name" style="flex: 0 0 auto; font-size: 0.9em;">
+        <span class="reportModeVisible">#name_display# <span class="object_name">#object_name#</span></span>
+        <a href="#eqLink#" class="reportModeHidden">#name_display# <span class="object_name">#object_name#</span></a>
     </center>
-    #dataTab#
-  </div>
-
-
-  <div id="highcharts_and_infos-#id#">
-    <figure id="figure-#id#" class="highcharts-figure" style="margin: 0px;">
-      <div class="container" style="width: 100%;">
-
-        <!-- Slider main container -->
-        <div class="swiper mySwiper#id#">
-          <!-- Additional required wrapper -->
-          <div class="swiper-wrapper">
-            <!-- Slides -->
-            #div_carousel_item_days#
-            <div class="swiper-slide">
-              <div class="chart" id="chartMonth-#id#"></div>
+    
+    <!-- Styles CSS avec variables de personnalisation -->
+    <style>
+        /* Variables de personnalisation */
+        #teleinfo-container-#id#,
+        #teleinfo-container-#id# * {
+            /* Variables locales au widget */
+            --teleinfo-vumeter-font-size: #vumeter_font_size#;
+            --teleinfo-value-color:     #value_color#;
+        }
+        
+        .teleinfo-widget-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+            overflow: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* Bouton Panel */
+        .teleinfo-panel-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(41, 128, 185, 0.25));
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            border-radius: 6px;
+            color: #2980b9;
+            text-decoration: none;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .teleinfo-panel-button:hover {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.25), rgba(41, 128, 185, 0.35));
+            border-color: rgba(52, 152, 219, 0.5);
+            color: #1a5276;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .teleinfo-panel-button i {
+            font-size: 1.1em;
+        }
+        
+        /* Infobulle (Tooltip) */
+        .teleinfo-tooltip {
+            position: fixed;
+            z-index: 99999;
+            background: rgba(44, 62, 80, 0.95);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+            max-width: 250px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .teleinfo-tooltip.visible {
+            opacity: 1;
+        }
+        
+        .teleinfo-tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: rgba(44, 62, 80, 0.95);
+        }
+        
+        .teleinfo-tooltip.tooltip-top::before {
+            bottom: auto;
+            top: 100%;
+            border-bottom-color: transparent;
+            border-top-color: rgba(44, 62, 80, 0.95);
+        }
+        
+        .tooltip-header {
+            font-weight: 600;
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ecf0f1;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+        }
+        
+        .tooltip-row i {
+            width: 14px;
+            text-align: center;
+            color: #3498db;
+        }
+        
+        .tooltip-label {
+            color: #bdc3c7;
+            font-size: 0.9em;
+        }
+        
+        .tooltip-value {
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        /* Élément déclencheur de tooltip */
+        .tooltip-trigger {
+            cursor: help;
+            position: relative;
+            border-bottom: 1px dotted rgba(52, 73, 94, 0.4);
+            padding-bottom: 1px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .tooltip-trigger:hover {
+            border-bottom-color: rgba(52, 152, 219, 0.6);
+        }
+        
+        /* Section */
+        .teleinfo-section {
+            margin-bottom: 8px;
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.02);
+        }
+        
+        .teleinfo-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            gap: 4px;
+        }
+        
+        .section-title {
+            font-size: 0.7em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+        }
+        
+        .section-badges {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .section-badge {
+            font-size: 0.6em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .badge-standard { background-color: rgba(155, 89, 182, 0.2); color: #8e44ad; }
+        .badge-historique { background-color: rgba(230, 126, 34, 0.2); color: #d35400; }
+        .badge-prod { background-color: rgba(52, 73, 94, 0.15); color: #34495e; }
+        .badge-all { background-color: rgba(52, 152, 219, 0.15); color: #3498db; }
+        
+        /* Infos abonnement et tarif */
+        .info-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .info-label {
+            font-size: 0.55em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+        
+        .info-value {
+            font-size: 0.65em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .info-separator {
+            color: #bdc3c7;
+            font-size: 0.6em;
+            margin: 0 2px;
+        }
+        
+        /* Badge tarif coloré selon le type */
+        .tarif-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.6em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .tarif-hp { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; }
+        .tarif-hc { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; }
+        .tarif-standard { background-color: rgba(52, 152, 219, 0.15); color: #3498db; }
+        .tarif-pointe { background-color: rgba(230, 126, 34, 0.2); color: #d35400; }
+        .tarif-bleu { background-color: rgba(52, 152, 219, 0.2); color: #2980b9; }
+        .tarif-blanc { background-color: rgba(149, 165, 166, 0.3); color: #7f8c8d; }
+        .tarif-rouge { background-color: rgba(192, 57, 43, 0.2); color: #c0392b; }
+        
+        /* Vumètre */
+        .teleinfo-vumeter {
+            margin-bottom: 6px;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 4px;
+        }
+        
+        .vumeter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+            font-size: 1em;
+        }
+        
+        .vumeter-label {
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        /* PERSONNALISATION: Taille de police du vumètre */
+        .vumeter-value {
+            font-weight: 700;
+            font-size: var(--teleinfo-vumeter-font-size, 0.95em)!important;
+            color: #2c3e50;
+        }
+        
+        .vumeter-value.updating {
+            color: #3498db;
+        }
+        
+        .vumeter-bar-container {
+            height: 5px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .vumeter-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+        
+        .vumeter-bar.low { background: #27ae60; }
+        .vumeter-bar.medium { background: linear-gradient(90deg, #27ae60, #f1c40f); }
+        .vumeter-bar.high { background: linear-gradient(90deg, #f1c40f, #e74c3c); }
+        .vumeter-bar.critical { background: #e74c3c; }
+        
+        .vumeter-bar.injection-low { background: #3498db; }
+        .vumeter-bar.injection-medium { background: linear-gradient(90deg, #3498db, #9b59b6); }
+        .vumeter-bar.injection-high { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+        .vumeter-bar.injection-critical { background: #8e44ad; }
+        
+        .vumeter-scale {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1px;
+            font-size: 0.55em;
+            color: #999;
+        }
+        
+        /* Tableau */
+        .teleinfo-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8em;
+            margin-bottom: 4px;
+        }
+        
+        .teleinfo-table th {
+            background-color: rgba(0, 0, 0, 0.06);
+            padding: 5px 3px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.65em;
+            text-transform: uppercase;
+        }
+        
+        .teleinfo-table td {
+            padding: 4px 3px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .index-row:hover { background-color: rgba(0, 0, 0, 0.03); }
+        
+        .index-total-row {
+            background-color: rgba(52, 152, 219, 0.1);
+            font-weight: 600;
+        }
+        
+        .index-name {
+            text-align: left !important;
+            padding-left: 6px !important;
+            font-weight: 500;
+            min-width: 70px;
+        }
+        
+        .index-value { color: #2c3e50; }
+        .index-conso { color: #27ae60; }
+        .index-cout { color: #e74c3c; font-weight: 500; }
+        
+        /* Total */
+        .teleinfo-total-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 4px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.12), rgba(41, 128, 185, 0.18));
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.8em;
+        }
+        
+        .total-item { text-align: center; flex: 1; }
+        .total-label { display: block; font-size: 0.6em; text-transform: uppercase; opacity: 0.7; margin-bottom: 1px; }
+        .total-value { font-size: 1em; }
+        .total-conso .total-value { color: #27ae60; }
+        .total-cout .total-value { color: #c0392b; }
+        
+        /* Tableau toutes commandes */
+        .all-cmds-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75em;
+        }
+        
+        .all-cmds-table th {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: 4px 3px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.6em;
+            text-transform: uppercase;
+        }
+        
+        .all-cmds-table td {
+            padding: 3px 2px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            font-size: 0.9em;
+        }
+        
+        .all-cmds-table .cmd-name {
+            text-align: left !important;
+            padding-left: 4px !important;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .all-cmds-table .cmd-value {
+            color: var(--teleinfo-value-color, #2c3e50);
+            font-weight: 600;
+        }
+        
+        .all-cmds-table .cmd-unit {
+            color: #7f8c8d;
+            font-size: 0.85em;
+        }
+        
+        .all-cmds-row:hover { background-color: rgba(0, 0, 0, 0.03); }
+        
+        @keyframes teleinfo-highlight {
+            0% { color: inherit; }
+            50% { color: #3498db; }
+            100% { color: inherit; }
+        }
+        
+        .teleinfo-updating {
+            animation: teleinfo-highlight 0.3s ease-out;
+        }
+        
+        .cmd-widget { cursor: pointer; }
+        .cmd-widget:hover { text-decoration: underline; }
+        
+        /* Responsive */
+        @media (max-width: 220px) {
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .section-badges {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .info-separator {
+                display: none;
+            }
+            
+            .teleinfo-panel-button {
+                padding: 5px 8px;
+                font-size: 0.7em;
+            }
+        }
+    </style>
+    
+    <!-- Conteneur principal -->
+    <div class="teleinfo-widget-container" id="teleinfo-container-#id#">
+        
+        <!-- Bouton Panel (si activé) -->
+        #panel_button_html#
+        
+        <!-- ========== SECTION CONSOMMATION ========== -->
+        <div class="teleinfo-section conso" id="section-conso-#id#">
+            <div class="section-header">
+                <span class="section-title">Consommation</span>
+                <div class="section-badges">
+                    <!-- Badge Mode (Standard/Historique) -->
+                    <span class="section-badge #is_standard_mode#">#is_standard_mode_label#</span>
+                    
+                    <!-- Séparateur -->
+                    <span class="info-separator">|</span>
+                    
+                    <!-- Nom de l'abonnement -->
+                    <span class="info-item">
+                        <span class="info-label">Abo:</span>
+                        <span class="info-value tooltip-trigger" 
+                              id="subscription-name-#id#"
+                              data-collect-date="#subscription_collect_date#"
+                              data-value-date="#subscription_value_date#">#subscription_name#</span>
+                    </span>
+                    
+                    <!-- Séparateur -->
+                    <span class="info-separator">|</span>
+                    
+                    <!-- Tarif en cours -->
+                    <span class="info-item">
+                        <span class="info-label">Tarif:</span>
+                        <span class="tarif-badge #tarif_class# tooltip-trigger" 
+                              id="current-tarif-#id#"
+                              data-collect-date="#tarif_collect_date#"
+                              data-value-date="#tarif_value_date#">#current_tarif#</span>
+                    </span>
+                </div>
             </div>
-            <div class="swiper-slide">
-              <div class="chart" id="chartYear-#id#"></div>
+            
+            <!-- Vumètre Puissance Consommation -->
+            <div class="teleinfo-vumeter" id="vumeter-conso-#id#">
+                <div class="vumeter-header">
+                    <span class="vumeter-label">#papp_label#</span>
+                    <span class="vumeter-value tooltip-trigger" 
+                          id="papp-value-#id#"
+                          data-collect-date="#papp_collect_date#"
+                          data-value-date="#papp_value_date#">#papp_value# VA</span>
+                </div>
+                <div class="vumeter-bar-container">
+                    <div class="vumeter-bar #papp_bar_class#" id="papp-bar-#id#" style="width: #papp_percent#%;"></div>
+                </div>
+                <div class="vumeter-scale">
+                    <span>0</span>
+                    <span>#papp_max# VA</span>
+                </div>
             </div>
-          </div>
-
-          <!-- Navigation buttons -->
-          <div class="swiper-button-prev swiper-button-prev#id#"></div>
-          <div class=" swiper-button-next swiper-button-next#id#"></div>
-
+            
+            <!-- Tableau des index consommation -->
+            <table class="teleinfo-table">
+                <thead>
+                    <tr>
+                        <th class="index-name">Index</th>
+                        <th class="index-value">Valeur</th>
+                        <th class="index-conso">Conso Jour</th>
+                        <th class="index-cout">Coût Jour</th>
+                    </tr>
+                </thead>
+                <tbody id="teleinfo-index-body-#id#">
+                    #index_table_rows#
+                </tbody>
+            </table>
+            
+            <!-- Total Consommation -->
+            <div class="teleinfo-total-row">
+                <div class="total-item total-conso">
+                    <span class="total-label">Total Jour</span>
+                    <span class="total-value" id="total-conso-#id#">#total_conso_today# kWh</span>
+                </div>
+                <div class="total-item total-cout">
+                    <span class="total-label">Coût Total</span>
+                    <span class="total-value" id="total-cout-#id#">#total_cout_today#</span>
+                </div>
+            </div>
         </div>
-
-      </div>
-    </figure>
-
-  </div>
-
-  <script>
-    /*
-    Function includeJS by noodom 09-05-2024
-    https://community.jeedom.com/t/import-dun-fichier-js-externe-dans-un-widget-sans-timeout-et-sans-jquery/125542
-    */
-    function includeJS(filenames, callback) {
-      if (typeof filenames === 'string') {
-        filenames = [filenames];
-      }
-
-      let loadedCount = 0;
-
-      function loadScript(filename) {
-        let sc = document.createElement('script');
-        sc.src = filename;
-        sc.type = 'text/javascript';
-        sc.async = true;
-
-        sc.onerror = function () {
-          loadedCount++;
-          if (loadedCount === filenames.length) {
-            callback();
-          }
-          sc.onerror = null;
-        };
-
-        sc.onload = sc.onreadystatechange = function () {
-          if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
-            loadedCount++;
-            if (loadedCount === filenames.length) {
-              callback();
+        
+        <!-- ========== SECTION PRODUCTION ========== -->
+        #production_section_html#
+        
+        <!-- ========== SECTION TOUTES LES COMMANDES ========== -->
+        #all_cmds_section_html#
+        
+    </div>
+    
+    <!-- Infobulle globale -->
+    <div class="teleinfo-tooltip" id="teleinfo-tooltip-#id#">
+        <div class="tooltip-header">Informations</div>
+        <div class="tooltip-row">
+            <i class="fa fa-calendar"></i>
+            <span class="tooltip-label">Date valeur:</span>
+            <span class="tooltip-value" id="tooltip-value-date-#id#">--</span>
+        </div>
+        <div class="tooltip-row">
+            <i class="fa fa-download"></i>
+            <span class="tooltip-label">Date collecte:</span>
+            <span class="tooltip-value" id="tooltip-collect-date-#id#">--</span>
+        </div>
+    </div>
+    
+    <!-- Script JavaScript -->
+    <script>
+    (function() {
+        'use strict';
+        
+        var eqLogicId = '#id#';
+        var indexData = #index_data#;
+        var isStandardMode = #is_standard_mode_js#;
+        var hasProduction = #has_production#;
+        var hasAllCmds = #has_all_cmds#;
+        
+        // Commandes pour l'abonnement et le tarif
+        var subscriptionCmdId = '#subscription_cmd_id#';
+        var tarifCmdId = '#tarif_cmd_id#';
+        
+        // Commandes pour le vumètre et autres
+        var pappCmdId = '#papp_cmd_id#';
+        var pappMax = parseInt('#papp_max#', 10) || 12000;
+        var sinstiCmdId = '#sinsti_cmd_id#';
+        var sinstiMax = parseInt('#sinsti_max#', 10) || 12000;
+        var eaitCmdId = '#eait_cmd_id#';
+        var statProdCmdId = '#stat_prod_cmd_id#';
+        var coutProdKwh = parseFloat('#cout_prod_kwh#') || 0;
+        var allCmdsData = #all_cmds_data#;
+        
+        // Configuration de personnalisation
+        var vumeterFontSize = '#vumeter_font_size#' || '0.95em';
+        var valueColor = '#value_color#' || '#34495e';
+        
+        var lastValues = {};
+        var lastAnimationTime = {};
+        var ANIMATION_MIN_INTERVAL = 500;
+        
+        // === GESTION DE L'INFOBULLE ===
+        var tooltip = document.getElementById('teleinfo-tooltip-' + eqLogicId);
+        var tooltipValueDate = document.getElementById('tooltip-value-date-' + eqLogicId);
+        var tooltipCollectDate = document.getElementById('tooltip-collect-date-' + eqLogicId);
+        var currentTooltipElement = null;
+        
+        // Formater une date pour l'affichage
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr === '' || dateStr === '0000-00-00 00:00:00') {
+                return '--';
             }
-            sc.onload = sc.onreadystatechange = null;
-          }
-        };
-
-        document.body.appendChild(sc);
-      }
-
-      filenames.forEach(filename => loadScript(filename));
-    }
-
-
-
-
-    /* Désactivation du bargraphe Aujourd'hui s'il n'existe pas de données */
-    if (#index00# == 0 || #index01# == 0 || #index02# == 0 || #index03# == 0 || #index04# == 0 || #index05# == 0 || #index06# == 0 || #index07# == 0 || #index08# == 0 || #index09# == 0 || #index10# == 0 ) {
-      document.getElementById("chart-xrange-today#id#").style.display = "none";
-      document.getElementById("chart-xrange-today_hidden#id#").style.display = "block";
-    }
-
-    /* Désactivation du bargraphe jour s'il n'existe pas de données */
-    if (#index00J# == 0 || #index01J# == 0 || #index02J# == 0 || #index03J# == 0 || #index04J# == 0 || #index05J# == 0 || #index06J# == 0 || #index07J# == 0 || #index08J# == 0 || #index09J# == 0 || #index10J# == 0 ) {
-      document.getElementById("chart-xrange-yesterday#id#").style.display = "none";
-      document.getElementById("chart-xrange-yesterday_hidden#id#").style.display = "block";
-    }
-
-    /* Désactivation du bargraphe Mois s'il n'existe pas de données */
-    if (#index00M# == 0 || #index01M# == 0 || #index02M# == 0 || #index03M# == 0 || #index04M# == 0 || #index05M# == 0 || #index06M# == 0 || #index07M# == 0 || #index08M# == 0 || #index09M# == 0 || #index10M# == 0 ) {
-      document.getElementById("chart-xrange-today#id#").style.display = "none";
-      document.getElementById("chart-xrange-today_hidden#id#").style.display = "block";
-    }
-
-    /* Désactivation du bargraphe Année s'il n'existe pas de données */
-    if (#index00A# == 0 || #index01A# == 0 || #index02A# == 0 || #index03A# == 0 || #index04A# == 0 || #index05A# == 0 || #index06A# == 0 || #index07A# == 0 || #index08A# == 0 || #index09A# == 0 || #index10A# == 0 ) {
-      document.getElementById("chart-xrange-today#id#").style.display = "none";
-      document.getElementById("chart-xrange-today_hidden#id#").style.display = "block";
-    }
-
-    includeJS(['3rdparty/highstock/highcharts-more.js', '3rdparty/highstock/modules/xrange.js', 'plugins/solcast/3rdparty/swiper/swiper-bundle.min.js'], function () {
-
-      /////////////////////////////////////////////////////////////
-      //                    Swiper                               //
-      /////////////////////////////////////////////////////////////
-      var swiper = new Swiper(".mySwiper#id#", {
-        loop: true,
-        navigation: {
-          nextEl: ".swiper-button-next#id#",
-          prevEl: ".swiper-button-prev#id#",
-        },
-      });
-
-
-    //////////////////////////////////////////
-    // Graphique line pour le jour en cours //
-    //////////////////////////////////////////
-
-    Highcharts.chart('chartDaysJ0-#id#', {
-      chart: {
-        type: '#chartType#',
-        marginLeft: 80
-      },
-
-      title: {
-        style: { "color": "var(--txt-color)" },
-        text: 'Aujourd\'hui',
-        floating: true,
-        align: 'left',
-        x: 80,
-        y: 20
-      },
-
-      credits: {
-        enabled: false
-      },
-
-      tooltip: {
-        shared: true
-      },
-
-      navigation: {
-        buttonOptions: {
-          x: -30
-        }
-      },
-
-      xAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'Heure',
-          margin: 1
-        },
-        categories: [#dataHours#]
-      },
-
-      yAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'W',
-          margin: 2
-        },
-        labels: {
-          style: {
-            color: "var(--txt-color)"
-          }
-        },
-        endOnTick: false,
-        maxPadding: 0.3
-      },
-
-      plotOptions: {
-        series: {
-          pointPlacement: 'on',
-          marker: {
-            enabled: '#showPlot#',
-            radius: 3
-          }
-        }
-      },
-
-      series: [
-        {
-          name: 'Global',
-          data: [#dataIndex00#],
-          dataLabels: {
-            enabled: true,
-            shape: 'callout',
-            align: 'center',
-            borderRadius: 5,
-            backgroundColor: 'rgba(252, 255, 197, 0.6)',
-            borderWidth: 1,
-            borderColor: 'rgb(100, 160, 230)',
-            shadow: true,
-            padding: 5,
-            y: -10,
-            style: { fontFamily: 'Helvetica', color: "contrast", textOutline: false },
-            formatter: function () {
-              if (this.y == this.series.dataMax && this.y != 0) {
-                return "Max : " + this.y + " W";
-              }
+            try {
+                var date = new Date(dateStr.replace(/-/g, '/'));
+                if (isNaN(date.getTime())) {
+                    return dateStr;
+                }
+                var options = {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                };
+                return date.toLocaleDateString('fr-FR', options);
+            } catch (e) {
+                return dateStr;
             }
-          },
-          zoneAxis: 'x',
-          zones: [{
-            value: #nbZones#
-        	}, {
-            dashStyle: 'dash'
-          }]
-        },
-        {
-          name: 'Index 01',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 02',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 03',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 04',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 05',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 06',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 07',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 08',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 09',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
-        },
-        {
-          name: 'Index 10',
-          data: [#dataIndex01#],
-          dashStyle: 'dot'
         }
-      ]
-
-    });
-
-
-    //////////////////////////////////////
-    // 	Graphique column pour le mois 	//
-    //////////////////////////////////////
-
-    Highcharts.chart('chartMonth-#id#', {
-      chart: {
-        type: '#chartType#'
-      },
-
-      title: {
-        style: { "color": "var(--txt-color)" },
-        text: 'Mois',
-        floating: true,
-        align: 'left',
-        x: 80,
-        y: 20
-      },
-
-      credits: {
-        enabled: false
-      },
-
-      tooltip: {
-        shared: true
-      },
-
-      navigation: {
-        buttonOptions: {
-          x: -30
-        }
-      },
-
-      xAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'Jour',
-          margin: 1
-        },
-        categories: [#dataDays#]
-      },
-
-      yAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'Wh',
-          margin: 2
-        },
-        labels: {
-          style: {
-            color: "var(--txt-color)"
-          }
-        },
-        endOnTick: false,
-        maxPadding: 0.3
-      },
-
-      plotOptions: {
-        series: {
-          pointPlacement: 'on',
-          marker: {
-            enabled: '#showPlot#',
-            radius: 3
-          }
-        }
-      },
-
-      series: [
-        {
-          name: 'Prévision',
-          data: [#dataMonthPrevision#]
-        },
-        {
-          name: 'Prévision à 6h',
-          data: [#dataMonthPrevision6h#]
-        },
-        {
-          name: 'Production',
-          data: [#dataMonthProduction#]
-        }
-      ]
-    });
-
-
-    //////////////////////////////////////
-    // 	Graphique column pour l'année 	//
-    //////////////////////////////////////
-
-    Highcharts.chart('chartYear-#id#', {
-      chart: {
-        type: 'column'
-      },
-
-      title: {
-        style: { "color": "var(--txt-color)" },
-        text: 'Année',
-        floating: true,
-        align: 'left',
-        x: 80,
-        y: 20
-      },
-
-      credits: {
-        enabled: false
-      },
-
-      tooltip: {
-        shared: true
-      },
-
-      navigation: {
-        buttonOptions: {
-          x: -30
-        }
-      },
-
-      xAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'Mois',
-          margin: 1
-        },
-        categories: [#dataMonths#]
-      },
-
-      yAxis: {
-        title: {
-          style: { "color": "var(--txt-color)", "fontSize": "12px" },
-          text: 'Wh',
-          margin: 2
-        },
-        labels: {
-          style: {
-            color: "var(--txt-color)"
-          }
-        },
-        endOnTick: false,
-        maxPadding: 0.3
-      },
-
-      plotOptions: {
-        series: {
-          dataLabels: {
-            enabled: true,
-            align: 'center',
-            inside: true,
-            rotation: 270,
-            y: -5,
-            style: {
-              fontFamily: 'Helvetica',
-              color: 'contrast',
-              textOutline: false
+        
+        // Afficher l'infobulle
+        function showTooltip(element, collectDate, valueDate) {
+            if (!tooltip || !element) return;
+            
+            // Mettre à jour le contenu
+            tooltipValueDate.textContent = formatDate(valueDate);
+            tooltipCollectDate.textContent = formatDate(collectDate);
+            
+            // Positionner l'infobulle
+            var rect = element.getBoundingClientRect();
+            var tooltipRect = tooltip.getBoundingClientRect();
+            
+            // Position par défaut (en dessous)
+            var left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            var top = rect.bottom + 8;
+            
+            // Vérifier si l'infobulle dépasse à droite
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
             }
-          }
+            
+            // Vérifier si l'infobulle dépasse à gauche
+            if (left < 10) {
+                left = 10;
+            }
+            
+            // Vérifier si l'infobulle dépasse en bas
+            if (top + tooltipRect.height > window.innerHeight - 10) {
+                top = rect.top - tooltipRect.height - 8;
+                tooltip.classList.add('tooltip-top');
+            } else {
+                tooltip.classList.remove('tooltip-top');
+            }
+            
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+            tooltip.classList.add('visible');
+            currentTooltipElement = element;
         }
-      },
-
-      series: [
-        {
-          name: 'Prévision',
-          data: [#dataYearPrevision#],
-          zoneAxis: 'x',
-          zones: [{
-            value: #nbZones_Year#
-        	}, {
-            dashStyle: 'LongDashDotDot'
-          }]
-
-        },
-        {
-          name: 'Prévision à 6h',
-          data: [#dataYearPrevision6h#],
-          visible: false,
-          zoneAxis: 'x',
-          zones: [{
-            value: #nbZones_Year#,
-          }, {
-            dashStyle: 'LongDashDotDot'
-          }]
-        },
-        {
-          name: 'Production',
-          data: [#dataYearProduction#],
-          zoneAxis: 'x',
-          zones: [{
-            value: #nbZones_Year#
-        	}, {
-            dashStyle: 'LongDashDotDot'
-          }]
+        
+        // Masquer l'infobulle
+        function hideTooltip() {
+            if (tooltip) {
+                tooltip.classList.remove('visible');
+                currentTooltipElement = null;
+            }
         }
-      ]
-    });
-
-    //////////////////////////////////////
-    // Graphique xrange pour aujourd'hui //
-    //////////////////////////////////////
-
-    Highcharts.chart('chart-xrange-today#id#', {
-      chart: {
-        type: 'xrange',
-        marginLeft: 40,
-        marginRight: 40,
-        spacingBottom: 0
-      },
-      title: {
-        text: Math.round(#forecastJ0_90# - #forecastJ0_10#, 0) + ' Wh', // Utilisation du titre pour donner l'écart entre J0_90 et J0_10
-        y: 15,
-        style: {
-          fontFamily: 'Monospace',
-          fontSize: '13px',
-          color: "var(--txt-color)"
+        
+        // Attacher les événements aux éléments avec tooltip
+        function attachTooltipEvents() {
+            var container = document.getElementById('teleinfo-container-' + eqLogicId);
+            if (!container) return;
+            
+            var triggers = container.querySelectorAll('.tooltip-trigger');
+            triggers.forEach(function(trigger) {
+                trigger.addEventListener('mouseenter', function(e) {
+                    var collectDate = this.getAttribute('data-collect-date');
+                    var valueDate = this.getAttribute('data-value-date');
+                    showTooltip(this, collectDate, valueDate);
+                });
+                
+                trigger.addEventListener('mouseleave', function(e) {
+                    hideTooltip();
+                });
+            });
         }
-      },
-      credits: {
-        enabled: false
-      },
-      xAxis: {
-        title: {
-          text: '',
-        },
-        minPadding: 0.07,
-        maxPadding: 0.11,
-        plotLines: [
-          {
-            width: 0,
-            value: (#forecastJ0_10#+#forecastJ0_90#) / 2,
-      label: {
-      x: -110,
-        y: 90,
-          useHTML: true, //enables html
-            text: 'Production : #d0_prod# Wh (' + Math.round(#d0_prod# / #forecastJ0# * 100, 0) + '%)',
-              rotation: 0,
-                style: {
-        fontFamily: 'Helvetica',
-          fontSize: '16px',
-            color: "green"
-      }
-    }
-    },
-    {
-      width: 0,
-        value: (#forecastJ0_10# + #forecastJ0_90#) / 2,
-      label: {
-        x: -110,
-          y: 18,
-            useHTML: true, //enables html
-              text: 'Prévision à 6h : ' + #forecastJ0_6h# + ' Wh' + '<div style="margin-left: 10px; vertical-align: middle; display: inline-block;"><div style="width: 45px; height: 22px; border-radius: 22px; background: #ReliabilityIndex_J0_color#; color: white; text-align: center">' + '#ReliabilityIndex_J0#' + ' / 4' + '</div></div><br>Prévision : ' + #forecastJ0# + ' Wh',
-                rotation: 0,
-                  style: {
-          fontFamily: 'Helvetica',
-            fontSize: '16px',
-              color: "rgb(80, 120, 170)"
+        
+        // Initialiser les tooltips au chargement
+        setTimeout(function() {
+            attachTooltipEvents();
+        }, 100);
+        
+        // Mettre à jour les dates d'un tooltip
+        function updateTooltipDates(elementId, collectDate, valueDate) {
+            var element = document.getElementById(elementId);
+            if (element) {
+                element.setAttribute('data-collect-date', collectDate || '');
+                element.setAttribute('data-value-date', valueDate || '');
+            }
         }
-      }
-    },
-    {
-      color: 'red',
-        width: 2,
-          value: #forecastJ0_10#,
-            dashStyle: 'ShortDash',
-              label: {
-        x: -20,
-          y: -15,
-            text: Math.round(#forecastJ0_10#, 0) + ' Wh <----',
-              rotation: 0,
-                style: {
-          fontFamily: 'Monospace',
-            color: "var(--txt-color)"
+        
+        function formatNumber(value, decimals) {
+            decimals = decimals || 0;
+            return Number(value).toLocaleString('fr-FR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
         }
-      }
-    },
-    {
-      color: 'red',
-        width: 2,
-          value: #forecastJ0_90#,
-            dashStyle: 'ShortDash',
-              label: {
-        x: -75,
-          y: -15,
-            text: '----> ' + Math.round(#forecastJ0_90#, 0) + ' Wh',
-              rotation: 0,
-                style: {
-          fontFamily: 'Monospace',
-            color: "var(--txt-color)"
+        
+        function animateIfChanged(element, elementKey, newValue) {
+            if (!element) return;
+            
+            if (lastValues[elementKey] === newValue) {
+                return;
+            }
+            lastValues[elementKey] = newValue;
+            
+            var now = Date.now();
+            if (lastAnimationTime[elementKey] && (now - lastAnimationTime[elementKey]) < ANIMATION_MIN_INTERVAL) {
+                return;
+            }
+            lastAnimationTime[elementKey] = now;
+            
+            element.classList.remove('teleinfo-updating');
+            void element.offsetWidth;
+            element.classList.add('teleinfo-updating');
+            
+            setTimeout(function() {
+                element.classList.remove('teleinfo-updating');
+            }, 300);
         }
-      }
-    }
-          ]
-        },
-    yAxis: {
-      title: {
-        text: 'Aujourd\'hui '
-      },
-      categories: ['']
-    },
-    series: [{
-      name: '',
-      borderColor: 'gray',
-      pointWidth: 20,
-      partialFill: {
-        fill: 'rgba(4,44,94,0.6)'
-      },
-      data: [
-        {
-          x: #forecastJ0_10#,
-          x2: #forecastJ0_90#,
-          y: 0,
-          partialFill: #reliabilityJ0#
+        
+        // Fonction pour déterminer la classe CSS du tarif
+        function getTarifClass(tarif) {
+            if (!tarif) return 'tarif-standard';
+            tarif = String(tarif).toUpperCase();
+            
+            // === TEMPO: Vérifier les COULEURS en PREMIER ===
+            // Tempo - Bleu
+            if (tarif.indexOf('BLEU') !== -1 || tarif.indexOf('JB') !== -1) {
+                return 'tarif-bleu';
+            }
+            // Tempo - Blanc
+            if (tarif.indexOf('BLANC') !== -1|| tarif.indexOf('JW') !== -1) {
+                return 'tarif-blanc';
+            }
+            // Tempo - Rouge
+            if (tarif.indexOf('ROUGE') !== -1 ||tarif.indexOf('JR') !== -1) {
+                return 'tarif-rouge';
+            }
+            
+            // === TYPES CLASSIQUES HP/HC ===
+            // Heures Pleines
+            if (tarif.indexOf('HP') !== -1) {
+                return 'tarif-hp';
+            }
+            // Heures Creuses
+            if (tarif.indexOf('HC')) {
+                return 'tarif-hc';
+            }
+            // Heures de pointe
+            if (tarif.indexOf('PM') !== -1) {
+                return 'tarif-pointe';
+            }
+            // Standard
+            return 'tarif-standard';
         }
-      ],
-      dataLabels: {
-        enabled: true,
-        x: 20,
-        style: {
-          fontFamily: 'Monospace',
-          fontSize: '13px',
-          color: "white"
+        
+        // Met à jour le nom de l'abonnement
+        function updateSubscription(value, collectDate, valueDate) {
+            var el = document.getElementById('subscription-name-' + eqLogicId);
+            if (el) {
+                el.textContent = value || '--';
+                if (collectDate) el.setAttribute('data-collect-date', collectDate);
+                if (valueDate) el.setAttribute('data-value-date', valueDate);
+                animateIfChanged(el, 'subscription', value);
+            }
         }
-      },
-      enableMouseTracking: false,
-      showInLegend: false
-    }]    
-      });
-
-    //////////////////////////////////////
-    //	 Graphique xrange pour demain	//
-    //////////////////////////////////////
-    Highcharts.chart('chart-xrange-tomorrow#id#', {
-      chart: {
-        type: 'xrange',
-        marginLeft: 40,
-        marginRight: 40,
-        spacingBottom: 0
-      },
-      title: {
-        text: Math.round(#forecastJ1_90# - #forecastJ1_10#, 0) + ' Wh', // Utilisation du titre pour donner l'écart entre J1_90 et J1_10
-        y: 15,
-        style: {
-          fontFamily: 'Monospace',
-          fontSize: '13px',
-          color: "var(--txt-color)"
+        
+        // Met à jour le tarif en cours
+        function updateTarif(value, collectDate, valueDate) {
+            var el = document.getElementById('current-tarif-' + eqLogicId);
+            if (el) {
+                el.textContent = value || '--';
+                el.className = 'tarif-badge tooltip-trigger ' + getTarifClass(value);
+                if (collectDate) el.setAttribute('data-collect-date', collectDate);
+                if (valueDate) el.setAttribute('data-value-date', valueDate);
+                animateIfChanged(el, 'tarif', value);
+                
+                // Réattacher les événements tooltip
+                el.addEventListener('mouseenter', function(e) {
+                    showTooltip(this, this.getAttribute('data-collect-date'), this.getAttribute('data-value-date'));
+                });
+                el.addEventListener('mouseleave', function(e) {
+                    hideTooltip();
+                });
+            }
         }
-      },
-      credits: {
-        enabled: false
-      },
-      xAxis: {
-        title: {
-          text: '',
-        },
-        minPadding: 0.07,
-        maxPadding: 0.11,
-        plotLines: [
-          {
-            color: 'rgb(80, 120, 170)',
-            width: 0,
-            value: (#forecastJ1_10#+#forecastJ1_90#) / 2,
-      label: {
-      x: -110,
-        y: 28,
-          useHTML: true, //enables html
-            text: "Prévision : #forecastJ1# Wh",
-              rotation: 0,
-                style: {
-        fontFamily: 'Helvetica',
-          fontSize: '16px',
-            color: "rgb(80, 120, 170)"
-      }
-    }
-    },
-    {
-      color: 'red',
-        width: 2,
-          value: #forecastJ1_10#,
-            dashStyle: 'ShortDash',
-              label: {
-        x: -20,
-          y: -15,
-            text: Math.round(#forecastJ1_10#, 0) + ' Wh <----',
-              rotation: 0,
-                style: {
-          fontFamily: 'Monospace',
-            color: "var(--txt-color)"
+        
+        // Met à jour le vumètre de consommation
+        function updateVumeterConso(value, collectDate, valueDate) {
+            var valueEl = document.getElementById('papp-value-' + eqLogicId);
+            var barEl = document.getElementById('papp-bar-' + eqLogicId);
+            if (!valueEl || !barEl) return;
+            
+            var numValue = parseFloat(value) || 0;
+            var percent = Math.min((numValue / pappMax) * 100, 100);
+            
+            valueEl.textContent = formatNumber(numValue, 0) + ' VA';
+            if (collectDate) valueEl.setAttribute('data-collect-date', collectDate);
+            if (valueDate) valueEl.setAttribute('data-value-date', valueDate);
+            valueEl.classList.add('updating');
+            setTimeout(function() { valueEl.classList.remove('updating'); }, 300);
+            
+            barEl.style.width = percent + '%';
+            
+            barEl.classList.remove('low', 'medium', 'high', 'critical');
+            if (percent < 30) {
+                barEl.classList.add('low');
+            } else if (percent < 60) {
+                barEl.classList.add('medium');
+            } else if (percent < 85) {
+                barEl.classList.add('high');
+            } else {
+                barEl.classList.add('critical');
+            }
         }
-      }
-    },
-    {
-      color: 'red',
-        width: 2,
-          value: #forecastJ1_90#,
-            dashStyle: 'ShortDash',
-              label: {
-        x: -75,
-          y: -15,
-            text: '----> ' + Math.round(#forecastJ1_90#, 0) + ' Wh',
-              rotation: 0,
-                style: {
-          fontFamily: 'Monospace',
-            color: "var(--txt-color)"
+        
+        // Met à jour le vumètre d'injection (production)
+        function updateVumeterProd(value, collectDate, valueDate) {
+            var valueEl = document.getElementById('sinsti-value-' + eqLogicId);
+            var barEl = document.getElementById('sinsti-bar-' + eqLogicId);
+            if (!valueEl || !barEl) return;
+            
+            var numValue = parseFloat(value) || 0;
+            var percent = Math.min((numValue / sinstiMax) * 100, 100);
+            
+            valueEl.textContent = formatNumber(numValue, 0) + ' VA';
+            if (collectDate) valueEl.setAttribute('data-collect-date', collectDate);
+            if (valueDate) valueEl.setAttribute('data-value-date', valueDate);
+            valueEl.classList.add('updating');
+            setTimeout(function() { valueEl.classList.remove('updating'); }, 300);
+            
+            barEl.style.width = percent + '%';
+            
+            barEl.classList.remove('injection-low', 'injection-medium', 'injection-high', 'injection-critical');
+            if (percent < 30) {
+                barEl.classList.add('injection-low');
+            } else if (percent < 60) {
+                barEl.classList.add('injection-medium');
+            } else if (percent < 85) {
+                barEl.classList.add('injection-high');
+            } else {
+                barEl.classList.add('injection-critical');
+            }
         }
-      }
-    }
-          ]
-        },
-    yAxis: {
-      title: {
-        text: 'Demain'
-      },
-      categories: [''],
-    },
-    series: [{
-      name: '',
-      borderColor: 'gray',
-      pointWidth: 20,
-      partialFill: {
-        fill: 'rgba(4,44,94,0.6)'
-      },
-      data: [{
-        x: #forecastJ1_10#,
-        x2: #forecastJ1_90#,
-        y: 0,
-        partialFill: #reliabilityJ1#
-          }],
-      dataLabels: {
-        enabled: true,
-        x: 20,
-        style: {
-          fontFamily: 'Monospace',
-          fontSize: '13px',
-          color: "white"
+        
+        // Met à jour le total production
+        function updateTotalProd() {
+            var consoEl = document.getElementById('prod-conso-' + eqLogicId);
+            var totalProdEl = document.getElementById('total-prod-' + eqLogicId);
+            var totalProdCoutEl = document.getElementById('total-prod-cout-' + eqLogicId);
+            
+            if (consoEl && totalProdEl) {
+                totalProdEl.textContent = consoEl.textContent;
+            }
+            
+            if (consoEl && totalProdCoutEl && coutProdKwh > 0) {
+                var consoWh = parseFloat(consoEl.textContent.replace(/[^\d,]/g, '').replace(',', '.')) * 1000;
+                var cout = (consoWh / 1000) * coutProdKwh;
+                totalProdCoutEl.textContent = formatNumber(cout, 2) + ' €';
+            }
         }
-      },
-      enableMouseTracking: false,
-      showInLegend: false
-    }]    
-      });
-
-    }); // End includeJS
-  </script>
-
-
-  <style>
-    :root {
-      --swiper-navigation-size: 30px;
-      --swiper-navigation-top-offset: 82%;
-      --swiper-navigation-sides-offset: 5px;
-    }
-
-    .rectangle {
-      width: 270px;
-      margin: auto;
-      margin-top: 10px;
-      border: 1px solid var(--txt-color);
-    }
-
-    #chart-xrange#id# #chart-xrange-today#id# {
-      float: #setfloat_xrange_today#;
-      width: #setwidth_xrange_today#;
-    }
-
-    #chart-xrange#id# #chart-xrange-tomorrow#id# {
-      width: #setwidth_xrange_tomorrow#;
-    }
-
-    #highcharts_and_infos-#id# #figure-#id# {
-      float: #setfloat_figure#;
-      width: #setwidth_figure#;
-    }
-
-    #highcharts_and_infos-#id# #dataActuSolCast-#id# {
-      width: #setwitdh_dataActuSolCast;
-    }
-
-    #chartDaysJ0-#id# {
-      height: #setheight_charts#;
-    }
-
-    #chartDaysJ1-#id# {
-      height: #setheight_charts#;
-    }
-
-    #chartDaysJ2-#id# {
-      height: #setheight_charts#;
-    }
-
-    #chartMonth-#id# {
-      height: #setheight_charts#;
-    }
-
-    #chartYear-#id# {
-      height: #setheight_charts#;
-    }
-  </style>
-
+        
+        function updateTotalsConso() {
+            var container = document.getElementById('teleinfo-container-' + eqLogicId);
+            if (!container) return;
+            
+            var totalConso = 0;
+            var totalCout = 0;
+            
+            if (isStandardMode) {
+                var row0 = container.querySelector('#section-conso-' + eqLogicId + ' [data-row-index="0"]');
+                if (row0) {
+                    var consoText = row0.querySelector('.conso-number');
+                    var coutText = row0.querySelector('.cout-number');
+                    
+                    if (consoText) {
+                        totalConso = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+                    }
+                    if (coutText) {
+                        totalCout = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+                    }
+                }
+            } else {
+                for (var key in indexData) {
+                    var index = indexData[key];
+                    if (!index.display) continue;
+                    
+                    var row = container.querySelector('#section-conso-' + eqLogicId + ' [data-row-index="' + key + '"]');
+                    if (!row) continue;
+                    
+                    var consoText = row.querySelector('.conso-number');
+                    var coutText = row.querySelector('.cout-number');
+                    
+                    if (consoText) {
+                        var consoVal = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
+                        if (!isNaN(consoVal)) totalConso += consoVal;
+                    }
+                    if (coutText) {
+                        var coutVal = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
+                        if (!isNaN(coutVal)) totalCout += coutVal;
+                    }
+                }
+            }
+            
+            var totalConsoEl = document.getElementById('total-conso-' + eqLogicId);
+            var totalCoutEl = document.getElementById('total-cout-' + eqLogicId);
+            
+            if (totalConsoEl) totalConsoEl.textContent = formatNumber(totalConso, 2) + ' kWh';
+            if (totalCoutEl) totalCoutEl.textContent = formatNumber(totalCout, 2) + ' €';
+        }
+        
+        // Met à jour une commande dans le tableau "toutes les commandes"
+        function updateAllCmd(cmdId, value, collectDate, valueDate) {
+            if (!allCmdsData || !hasAllCmds) return;
+            
+            for (var key in allCmdsData) {
+                var cmd = allCmdsData[key];
+                if (cmd.id && cmd.id.toString() === cmdId.toString()) {
+                    var valueEl = document.getElementById('all-cmd-value-' + cmdId);
+                    if (valueEl) {
+                        var displayValue = value;
+                        if (cmd.subtype === 'numeric') {
+                            displayValue = formatNumber(parseFloat(value), cmd.decimals || 0);
+                        }
+                        valueEl.textContent = displayValue;
+                        if (collectDate) valueEl.setAttribute('data-collect-date', collectDate);
+                        if (valueDate) valueEl.setAttribute('data-value-date', valueDate);
+                        animateIfChanged(valueEl, 'all_cmd_' + cmdId, value);
+                    }
+                    return;
+                }
+            }
+        }
+        
+        function updateValue(cmdId, value, collectDate, valueDate) {
+            // Mise à jour de l'abonnement
+            if (cmdId && subscriptionCmdId && cmdId.toString() === subscriptionCmdId.toString()) {
+                updateSubscription(value, collectDate, valueDate);
+                return;
+            }
+            
+            // Mise à jour du tarif
+            if (cmdId && tarifCmdId && cmdId.toString() === tarifCmdId.toString()) {
+                updateTarif(value, collectDate, valueDate);
+                return;
+            }
+            
+            // Vumètre consommation (PAPP/SINSTS)
+            if (cmdId && pappCmdId && cmdId.toString() === pappCmdId.toString()) {
+                updateVumeterConso(value, collectDate, valueDate);
+                return;
+            }
+            
+            // Vumètre production (SINSTI)
+            if (cmdId && sinstiCmdId && cmdId.toString() === sinstiCmdId.toString()) {
+                updateVumeterProd(value, collectDate, valueDate);
+                return;
+            }
+            
+            // Index EAIT
+            if (cmdId && eaitCmdId && cmdId.toString() === eaitCmdId.toString()) {
+                var eaitValueEl = document.getElementById('eait-value-' + eqLogicId);
+                if (eaitValueEl) {
+                    eaitValueEl.textContent = formatNumber(parseFloat(value), 0);
+                    if (collectDate) eaitValueEl.setAttribute('data-collect-date', collectDate);
+                    if (valueDate) eaitValueEl.setAttribute('data-value-date', valueDate);
+                    animateIfChanged(eaitValueEl, 'eait_value', value);
+                }
+                return;
+            }
+            
+            // Stat production du jour
+            if (cmdId && statProdCmdId && cmdId.toString() === statProdCmdId.toString()) {
+                var prodConsoEl = document.getElementById('prod-conso-' + eqLogicId);
+                var prodCoutEl = document.getElementById('prod-cout-' + eqLogicId);
+                
+                if (prodConsoEl) {
+                    prodConsoEl.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh';
+                    if (collectDate) prodConsoEl.setAttribute('data-collect-date', collectDate);
+                    if (valueDate) prodConsoEl.setAttribute('data-value-date', valueDate);
+                    animateIfChanged(prodConsoEl, 'prod_conso', value);
+                }
+                
+                if (prodCoutEl && coutProdKwh > 0) {
+                    var cout = (parseFloat(value) / 1000) * coutProdKwh;
+                    prodCoutEl.textContent = formatNumber(cout, 2) + ' €';
+                    animateIfChanged(prodCoutEl, 'prod_cout', cout);
+                }
+                
+                updateTotalProd();
+                return;
+            }
+            
+            // Index consommation
+            var container = document.getElementById('teleinfo-container-' + eqLogicId);
+            if (!container) return;
+            
+            var consoSection = document.getElementById('section-conso-' + eqLogicId);
+            if (consoSection) {
+                for (var key in indexData) {
+                    var index = indexData[key];
+                    var row = consoSection.querySelector('[data-row-index="' + key + '"]');
+                    if (!row) continue;
+                    
+                    if (index.cmd_id && index.cmd_id.toString() === cmdId.toString()) {
+                        var valueCell = row.querySelector('.value-number');
+                        if (valueCell) {
+                            valueCell.textContent = formatNumber(parseFloat(value), 0);
+                            if (collectDate) valueCell.setAttribute('data-collect-date', collectDate);
+                            if (valueDate) valueCell.setAttribute('data-value-date', valueDate);
+                            animateIfChanged(valueCell, key + '_value', value);
+                        }
+                        return;
+                    }
+                    
+                    if (index.stat_conso_id && index.stat_conso_id.toString() === cmdId.toString()) {
+                        var consoCell = row.querySelector('.conso-number');
+                        if (consoCell) {
+                            consoCell.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh';
+                            if (collectDate) consoCell.setAttribute('data-collect-date', collectDate);
+                            if (valueDate) consoCell.setAttribute('data-value-date', valueDate);
+                            animateIfChanged(consoCell, key + '_conso', value);
+                        }
+                        updateTotalsConso();
+                        return;
+                    }
+                    
+                    if (index.stat_cout_id && index.stat_cout_id.toString() === cmdId.toString()) {
+                        var coutCell = row.querySelector('.cout-number');
+                        if (coutCell) {
+                            coutCell.textContent = formatNumber(parseFloat(value), 2) + ' €';
+                            if (collectDate) coutCell.setAttribute('data-collect-date', collectDate);
+                            if (valueDate) coutCell.setAttribute('data-value-date', valueDate);
+                            animateIfChanged(coutCell, key + '_cout', value);
+                        }
+                        updateTotalsConso();
+                        return;
+                    }
+                }
+            }
+            
+            // Vérifier si c'est une commande du tableau "toutes les commandes"
+            updateAllCmd(cmdId, value, collectDate, valueDate);
+        }
+        
+        // Enregistrer les listeners pour l'abonnement et le tarif
+        if (subscriptionCmdId) {
+            jeedom.cmd.addUpdateFunction(subscriptionCmdId, function(_options) {
+                updateSubscription(_options.value, _options.collectDate, _options.valueDate);
+            });
+        }
+        
+        if (tarifCmdId) {
+            jeedom.cmd.addUpdateFunction(tarifCmdId, function(_options) {
+                updateTarif(_options.value, _options.collectDate, _options.valueDate);
+            });
+        }
+        
+        // Enregistrer les listeners pour les index consommation
+        for (let key in indexData) {
+            let index = indexData[key];
+            
+            if (index.cmd_id) {
+                jeedom.cmd.addUpdateFunction(index.cmd_id, function(_options) {
+                    updateValue(index.cmd_id, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+            
+            if (index.stat_conso_id) {
+                jeedom.cmd.addUpdateFunction(index.stat_conso_id, function(_options) {
+                    updateValue(index.stat_conso_id, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+            
+            if (index.stat_cout_id) {
+                jeedom.cmd.addUpdateFunction(index.stat_cout_id, function(_options) {
+                    updateValue(index.stat_cout_id, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+        }
+        
+        // Listener pour PAPP/SINSTS
+        if (pappCmdId) {
+            jeedom.cmd.addUpdateFunction(pappCmdId, function(_options) {
+                updateValue(pappCmdId, _options.value, _options.collectDate, _options.valueDate);
+            });
+        }
+        
+        // Listeners pour Production (si activée)
+        if (hasProduction) {
+            if (sinstiCmdId) {
+                jeedom.cmd.addUpdateFunction(sinstiCmdId, function(_options) {
+                    updateValue(sinstiCmdId, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+            
+            if (eaitCmdId) {
+                jeedom.cmd.addUpdateFunction(eaitCmdId, function(_options) {
+                    updateValue(eaitCmdId, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+            
+            if (statProdCmdId) {
+                jeedom.cmd.addUpdateFunction(statProdCmdId, function(_options) {
+                    updateValue(statProdCmdId, _options.value, _options.collectDate, _options.valueDate);
+                });
+            }
+        }
+        
+        // Listeners pour toutes les commandes (si activé)
+        if (hasAllCmds && allCmdsData) {
+            for (let key in allCmdsData) {
+                let cmd = allCmdsData[key];
+                if (cmd.id) {
+                    jeedom.cmd.addUpdateFunction(cmd.id, function(_options) {
+                        updateAllCmd(cmd.id, _options.value, _options.collectDate, _options.valueDate);
+                    });
+                }
+            }
+        }
+        
+    })();
+    </script>
 </div>
