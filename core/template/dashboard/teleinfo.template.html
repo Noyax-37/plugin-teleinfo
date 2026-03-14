@@ -17,9 +17,8 @@
         /* Variables de personnalisation */
         #teleinfo-container-#id#,
         #teleinfo-container-#id# * {
-            /* Variables locales au widget */
             --teleinfo-vumeter-font-size: #vumeter_font_size#;
-            --teleinfo-value-color:     #value_color#;
+            --teleinfo-value-color: #value_color#;
         }
         
         .teleinfo-widget-container {
@@ -60,9 +59,7 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        .teleinfo-panel-button i {
-            font-size: 1.1em;
-        }
+        .teleinfo-panel-button i { font-size: 1.1em; }
         
         /* Infobulle (Tooltip) */
         .teleinfo-tooltip {
@@ -82,9 +79,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        .teleinfo-tooltip.visible {
-            opacity: 1;
-        }
+        .teleinfo-tooltip.visible { opacity: 1; }
         
         .teleinfo-tooltip::before {
             content: '';
@@ -111,28 +106,10 @@
             color: #ecf0f1;
         }
         
-        .tooltip-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 3px 0;
-        }
-        
-        .tooltip-row i {
-            width: 14px;
-            text-align: center;
-            color: #3498db;
-        }
-        
-        .tooltip-label {
-            color: #bdc3c7;
-            font-size: 0.9em;
-        }
-        
-        .tooltip-value {
-            color: #fff;
-            font-weight: 500;
-        }
+        .tooltip-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+        .tooltip-row i { width: 14px; text-align: center; color: #3498db; }
+        .tooltip-label { color: #bdc3c7; font-size: 0.9em; }
+        .tooltip-value { color: #fff; font-weight: 500; }
         
         /* Élément déclencheur de tooltip */
         .tooltip-trigger {
@@ -143,9 +120,7 @@
             transition: border-color 0.2s ease;
         }
         
-        .tooltip-trigger:hover {
-            border-bottom-color: rgba(52, 152, 219, 0.6);
-        }
+        .tooltip-trigger:hover { border-bottom-color: rgba(52, 152, 219, 0.6); }
         
         /* Section */
         .teleinfo-section {
@@ -156,9 +131,7 @@
             background: rgba(0,0,0,0.02);
         }
         
-        .teleinfo-section:last-child {
-            margin-bottom: 0;
-        }
+        .teleinfo-section:last-child { margin-bottom: 0; }
         
         .section-header {
             display: flex;
@@ -179,12 +152,7 @@
             color: #555;
         }
         
-        .section-badges {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 4px;
-        }
+        .section-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
         
         .section-badge {
             font-size: 0.6em;
@@ -198,31 +166,13 @@
         .badge-historique { background-color: rgba(230, 126, 34, 0.2); color: #d35400; }
         .badge-prod { background-color: rgba(52, 73, 94, 0.15); color: #34495e; }
         .badge-all { background-color: rgba(52, 152, 219, 0.15); color: #3498db; }
+        .badge-triphase { background-color: rgba(46, 204, 113, 0.15); color: #27ae60; }
         
         /* Infos abonnement et tarif */
-        .info-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-        }
-        
-        .info-label {
-            font-size: 0.55em;
-            color: #7f8c8d;
-            text-transform: uppercase;
-        }
-        
-        .info-value {
-            font-size: 0.65em;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .info-separator {
-            color: #bdc3c7;
-            font-size: 0.6em;
-            margin: 0 2px;
-        }
+        .info-item { display: inline-flex; align-items: center; gap: 3px; }
+        .info-label { font-size: 0.55em; color: #7f8c8d; text-transform: uppercase; }
+        .info-value { font-size: 0.65em; font-weight: 600; color: #2c3e50; }
+        .info-separator { color: #bdc3c7; font-size: 0.6em; margin: 0 2px; }
         
         /* Badge tarif coloré selon le type */
         .tarif-badge {
@@ -268,13 +218,11 @@
         /* PERSONNALISATION: Taille de police du vumètre */
         .vumeter-value {
             font-weight: 700;
-            font-size: var(--teleinfo-vumeter-font-size, 0.95em)!important;
+            font-size: var(--teleinfo-vumeter-font-size, 0.95em) !important;
             color: #2c3e50;
         }
         
-        .vumeter-value.updating {
-            color: #3498db;
-        }
+        .vumeter-value.updating { color: #3498db; }
         
         .vumeter-bar-container {
             height: 5px;
@@ -305,6 +253,49 @@
             margin-top: 1px;
             font-size: 0.55em;
             color: #999;
+        }
+        
+        /* Triphasé - Vumètres phases */
+        .triphase-vumeters-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        
+        .teleinfo-vumeter-phase {
+            flex: 1;
+            min-width: 70px;
+            padding: 4px 6px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .teleinfo-vumeter-phase .vumeter-header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .teleinfo-vumeter-phase .vumeter-label {
+            font-size: 0.6em;
+            font-weight: 500;
+            color: #666;
+            text-transform: none;
+        }
+        
+        .teleinfo-vumeter-phase .vumeter-value {
+            font-size: 0.8em !important;
+        }
+        
+        .teleinfo-vumeter-phase .vumeter-bar-container {
+            height: 4px;
+            margin: 3px 0;
+        }
+        
+        .teleinfo-vumeter-phase .vumeter-scale {
+            font-size: 0.5em;
         }
         
         /* Tableau */
@@ -402,10 +393,7 @@
             font-weight: 600;
         }
         
-        .all-cmds-table .cmd-unit {
-            color: #7f8c8d;
-            font-size: 0.85em;
-        }
+        .all-cmds-table .cmd-unit { color: #7f8c8d; font-size: 0.85em; }
         
         .all-cmds-row:hover { background-color: rgba(0, 0, 0, 0.03); }
         
@@ -415,33 +403,19 @@
             100% { color: inherit; }
         }
         
-        .teleinfo-updating {
-            animation: teleinfo-highlight 0.3s ease-out;
-        }
+        .teleinfo-updating { animation: teleinfo-highlight 0.3s ease-out; }
         
         .cmd-widget { cursor: pointer; }
         .cmd-widget:hover { text-decoration: underline; }
         
         /* Responsive */
         @media (max-width: 220px) {
-            .section-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .section-badges {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .info-separator {
-                display: none;
-            }
-            
-            .teleinfo-panel-button {
-                padding: 5px 8px;
-                font-size: 0.7em;
-            }
+            .section-header { flex-direction: column; align-items: flex-start; }
+            .section-badges { flex-direction: column; align-items: flex-start; }
+            .info-separator { display: none; }
+            .teleinfo-panel-button { padding: 5px 8px; font-size: 0.7em; }
+            .triphase-vumeters-container { flex-direction: column; }
+            .teleinfo-vumeter-phase { min-width: 100%; }
         }
     </style>
     
@@ -456,29 +430,18 @@
             <div class="section-header">
                 <span class="section-title">Consommation</span>
                 <div class="section-badges">
-                    <!-- Badge Mode (Standard/Historique) -->
                     <span class="section-badge #is_standard_mode#">#is_standard_mode_label#</span>
-                    
-                    <!-- Séparateur -->
                     <span class="info-separator">|</span>
-                    
-                    <!-- Nom de l'abonnement -->
                     <span class="info-item">
                         <span class="info-label">Abo:</span>
-                        <span class="info-value tooltip-trigger" 
-                              id="subscription-name-#id#"
+                        <span class="info-value tooltip-trigger" id="subscription-name-#id#"
                               data-collect-date="#subscription_collect_date#"
                               data-value-date="#subscription_value_date#">#subscription_name#</span>
                     </span>
-                    
-                    <!-- Séparateur -->
                     <span class="info-separator">|</span>
-                    
-                    <!-- Tarif en cours -->
                     <span class="info-item">
                         <span class="info-label">Tarif:</span>
-                        <span class="tarif-badge #tarif_class# tooltip-trigger" 
-                              id="current-tarif-#id#"
+                        <span class="tarif-badge #tarif_class# tooltip-trigger" id="current-tarif-#id#"
                               data-collect-date="#tarif_collect_date#"
                               data-value-date="#tarif_value_date#">#current_tarif#</span>
                     </span>
@@ -489,8 +452,7 @@
             <div class="teleinfo-vumeter" id="vumeter-conso-#id#">
                 <div class="vumeter-header">
                     <span class="vumeter-label">#papp_label#</span>
-                    <span class="vumeter-value tooltip-trigger" 
-                          id="papp-value-#id#"
+                    <span class="vumeter-value tooltip-trigger" id="papp-value-#id#"
                           data-collect-date="#papp_collect_date#"
                           data-value-date="#papp_value_date#">#papp_value# VA</span>
                 </div>
@@ -502,6 +464,9 @@
                     <span>#papp_max# VA</span>
                 </div>
             </div>
+            
+            <!-- ========== SECTION INTENSITÉS TRIPHASÉ ========== -->
+            #triphase_section_html#
             
             <!-- Tableau des index consommation -->
             <table class="teleinfo-table">
@@ -565,11 +530,16 @@
         var hasProduction = #has_production#;
         var hasAllCmds = #has_all_cmds#;
         
-        // Commandes pour l'abonnement et le tarif
+        // Triphasé
+        var hasTriphase = #has_triphase#;
+        var triphaseData = #triphase_data#;
+        var triphaseImax = parseFloat('#triphase_imax#') || 30;
+        
+        // Commandes abonnement et tarif
         var subscriptionCmdId = '#subscription_cmd_id#';
         var tarifCmdId = '#tarif_cmd_id#';
         
-        // Commandes pour le vumètre et autres
+        // Commandes vumètre
         var pappCmdId = '#papp_cmd_id#';
         var pappMax = parseInt('#papp_max#', 10) || 12000;
         var sinstiCmdId = '#sinsti_cmd_id#';
@@ -579,7 +549,18 @@
         var coutProdKwh = parseFloat('#cout_prod_kwh#') || 0;
         var allCmdsData = #all_cmds_data#;
         
-        // Configuration de personnalisation
+        // IDs commandes intensités phases
+        var phase1CmdId = '';
+        var phase2CmdId = '';
+        var phase3CmdId = '';
+        
+        if (hasTriphase && triphaseData) {
+            if (triphaseData[1] && triphaseData[1].cmd_id) phase1CmdId = triphaseData[1].cmd_id.toString();
+            if (triphaseData[2] && triphaseData[2].cmd_id) phase2CmdId = triphaseData[2].cmd_id.toString();
+            if (triphaseData[3] && triphaseData[3].cmd_id) phase3CmdId = triphaseData[3].cmd_id.toString();
+        }
+        
+        // Personnalisation
         var vumeterFontSize = '#vumeter_font_size#' || '0.95em';
         var valueColor = '#value_color#' || '#34495e';
         
@@ -591,59 +572,31 @@
         var tooltip = document.getElementById('teleinfo-tooltip-' + eqLogicId);
         var tooltipValueDate = document.getElementById('tooltip-value-date-' + eqLogicId);
         var tooltipCollectDate = document.getElementById('tooltip-collect-date-' + eqLogicId);
-        var currentTooltipElement = null;
         
-        // Formater une date pour l'affichage
         function formatDate(dateStr) {
-            if (!dateStr || dateStr === '' || dateStr === '0000-00-00 00:00:00') {
-                return '--';
-            }
+            if (!dateStr || dateStr === '' || dateStr === '0000-00-00 00:00:00') return '--';
             try {
                 var date = new Date(dateStr.replace(/-/g, '/'));
-                if (isNaN(date.getTime())) {
-                    return dateStr;
-                }
-                var options = {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                };
-                return date.toLocaleDateString('fr-FR', options);
-            } catch (e) {
-                return dateStr;
-            }
+                if (isNaN(date.getTime())) return dateStr;
+                return date.toLocaleDateString('fr-FR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+            } catch (e) { return dateStr; }
         }
         
-        // Afficher l'infobulle
         function showTooltip(element, collectDate, valueDate) {
             if (!tooltip || !element) return;
-            
-            // Mettre à jour le contenu
             tooltipValueDate.textContent = formatDate(valueDate);
             tooltipCollectDate.textContent = formatDate(collectDate);
             
-            // Positionner l'infobulle
             var rect = element.getBoundingClientRect();
             var tooltipRect = tooltip.getBoundingClientRect();
-            
-            // Position par défaut (en dessous)
             var left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
             var top = rect.bottom + 8;
             
-            // Vérifier si l'infobulle dépasse à droite
-            if (left + tooltipRect.width > window.innerWidth - 10) {
-                left = window.innerWidth - tooltipRect.width - 10;
-            }
-            
-            // Vérifier si l'infobulle dépasse à gauche
-            if (left < 10) {
-                left = 10;
-            }
-            
-            // Vérifier si l'infobulle dépasse en bas
+            if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
+            if (left < 10) left = 10;
             if (top + tooltipRect.height > window.innerHeight - 10) {
                 top = rect.top - tooltipRect.height - 8;
                 tooltip.classList.add('tooltip-top');
@@ -654,49 +607,24 @@
             tooltip.style.left = left + 'px';
             tooltip.style.top = top + 'px';
             tooltip.classList.add('visible');
-            currentTooltipElement = element;
         }
         
-        // Masquer l'infobulle
         function hideTooltip() {
-            if (tooltip) {
-                tooltip.classList.remove('visible');
-                currentTooltipElement = null;
-            }
+            if (tooltip) tooltip.classList.remove('visible');
         }
         
-        // Attacher les événements aux éléments avec tooltip
         function attachTooltipEvents() {
             var container = document.getElementById('teleinfo-container-' + eqLogicId);
             if (!container) return;
-            
-            var triggers = container.querySelectorAll('.tooltip-trigger');
-            triggers.forEach(function(trigger) {
-                trigger.addEventListener('mouseenter', function(e) {
-                    var collectDate = this.getAttribute('data-collect-date');
-                    var valueDate = this.getAttribute('data-value-date');
-                    showTooltip(this, collectDate, valueDate);
+            container.querySelectorAll('.tooltip-trigger').forEach(function(trigger) {
+                trigger.addEventListener('mouseenter', function() {
+                    showTooltip(this, this.getAttribute('data-collect-date'), this.getAttribute('data-value-date'));
                 });
-                
-                trigger.addEventListener('mouseleave', function(e) {
-                    hideTooltip();
-                });
+                trigger.addEventListener('mouseleave', hideTooltip);
             });
         }
         
-        // Initialiser les tooltips au chargement
-        setTimeout(function() {
-            attachTooltipEvents();
-        }, 100);
-        
-        // Mettre à jour les dates d'un tooltip
-        function updateTooltipDates(elementId, collectDate, valueDate) {
-            var element = document.getElementById(elementId);
-            if (element) {
-                element.setAttribute('data-collect-date', collectDate || '');
-                element.setAttribute('data-value-date', valueDate || '');
-            }
-        }
+        setTimeout(attachTooltipEvents, 100);
         
         function formatNumber(value, decimals) {
             decimals = decimals || 0;
@@ -707,65 +635,31 @@
         }
         
         function animateIfChanged(element, elementKey, newValue) {
-            if (!element) return;
-            
-            if (lastValues[elementKey] === newValue) {
-                return;
-            }
+            if (!element || lastValues[elementKey] === newValue) return;
             lastValues[elementKey] = newValue;
             
             var now = Date.now();
-            if (lastAnimationTime[elementKey] && (now - lastAnimationTime[elementKey]) < ANIMATION_MIN_INTERVAL) {
-                return;
-            }
+            if (lastAnimationTime[elementKey] && (now - lastAnimationTime[elementKey]) < ANIMATION_MIN_INTERVAL) return;
             lastAnimationTime[elementKey] = now;
             
             element.classList.remove('teleinfo-updating');
             void element.offsetWidth;
             element.classList.add('teleinfo-updating');
-            
-            setTimeout(function() {
-                element.classList.remove('teleinfo-updating');
-            }, 300);
+            setTimeout(function() { element.classList.remove('teleinfo-updating'); }, 300);
         }
         
-        // Fonction pour déterminer la classe CSS du tarif
         function getTarifClass(tarif) {
             if (!tarif) return 'tarif-standard';
             tarif = String(tarif).toUpperCase();
-            
-            // === TEMPO: Vérifier les COULEURS en PREMIER ===
-            // Tempo - Bleu
-            if (tarif.indexOf('BLEU') !== -1 || tarif.indexOf('JB') !== -1) {
-                return 'tarif-bleu';
-            }
-            // Tempo - Blanc
-            if (tarif.indexOf('BLANC') !== -1|| tarif.indexOf('JW') !== -1) {
-                return 'tarif-blanc';
-            }
-            // Tempo - Rouge
-            if (tarif.indexOf('ROUGE') !== -1 ||tarif.indexOf('JR') !== -1) {
-                return 'tarif-rouge';
-            }
-            
-            // === TYPES CLASSIQUES HP/HC ===
-            // Heures Pleines
-            if (tarif.indexOf('HP') !== -1) {
-                return 'tarif-hp';
-            }
-            // Heures Creuses
-            if (tarif.indexOf('HC')) {
-                return 'tarif-hc';
-            }
-            // Heures de pointe
-            if (tarif.indexOf('PM') !== -1) {
-                return 'tarif-pointe';
-            }
-            // Standard
+            if (tarif.indexOf('BLEU') !== -1 || tarif.indexOf('JB') !== -1) return 'tarif-bleu';
+            if (tarif.indexOf('BLANC') !== -1 || tarif.indexOf('JW') !== -1) return 'tarif-blanc';
+            if (tarif.indexOf('ROUGE') !== -1 || tarif.indexOf('JR') !== -1) return 'tarif-rouge';
+            if (tarif.indexOf('HP') !== -1) return 'tarif-hp';
+            if (tarif.indexOf('HC') !== -1) return 'tarif-hc';
+            if (tarif.indexOf('PM') !== -1) return 'tarif-pointe';
             return 'tarif-standard';
         }
         
-        // Met à jour le nom de l'abonnement
         function updateSubscription(value, collectDate, valueDate) {
             var el = document.getElementById('subscription-name-' + eqLogicId);
             if (el) {
@@ -776,7 +670,6 @@
             }
         }
         
-        // Met à jour le tarif en cours
         function updateTarif(value, collectDate, valueDate) {
             var el = document.getElementById('current-tarif-' + eqLogicId);
             if (el) {
@@ -785,18 +678,11 @@
                 if (collectDate) el.setAttribute('data-collect-date', collectDate);
                 if (valueDate) el.setAttribute('data-value-date', valueDate);
                 animateIfChanged(el, 'tarif', value);
-                
-                // Réattacher les événements tooltip
-                el.addEventListener('mouseenter', function(e) {
-                    showTooltip(this, this.getAttribute('data-collect-date'), this.getAttribute('data-value-date'));
-                });
-                el.addEventListener('mouseleave', function(e) {
-                    hideTooltip();
-                });
+                el.addEventListener('mouseenter', function() { showTooltip(this, this.getAttribute('data-collect-date'), this.getAttribute('data-value-date')); });
+                el.addEventListener('mouseleave', hideTooltip);
             }
         }
         
-        // Met à jour le vumètre de consommation
         function updateVumeterConso(value, collectDate, valueDate) {
             var valueEl = document.getElementById('papp-value-' + eqLogicId);
             var barEl = document.getElementById('papp-bar-' + eqLogicId);
@@ -812,20 +698,13 @@
             setTimeout(function() { valueEl.classList.remove('updating'); }, 300);
             
             barEl.style.width = percent + '%';
-            
             barEl.classList.remove('low', 'medium', 'high', 'critical');
-            if (percent < 30) {
-                barEl.classList.add('low');
-            } else if (percent < 60) {
-                barEl.classList.add('medium');
-            } else if (percent < 85) {
-                barEl.classList.add('high');
-            } else {
-                barEl.classList.add('critical');
-            }
+            if (percent < 30) barEl.classList.add('low');
+            else if (percent < 60) barEl.classList.add('medium');
+            else if (percent < 85) barEl.classList.add('high');
+            else barEl.classList.add('critical');
         }
         
-        // Met à jour le vumètre d'injection (production)
         function updateVumeterProd(value, collectDate, valueDate) {
             var valueEl = document.getElementById('sinsti-value-' + eqLogicId);
             var barEl = document.getElementById('sinsti-bar-' + eqLogicId);
@@ -841,33 +720,50 @@
             setTimeout(function() { valueEl.classList.remove('updating'); }, 300);
             
             barEl.style.width = percent + '%';
-            
             barEl.classList.remove('injection-low', 'injection-medium', 'injection-high', 'injection-critical');
-            if (percent < 30) {
-                barEl.classList.add('injection-low');
-            } else if (percent < 60) {
-                barEl.classList.add('injection-medium');
-            } else if (percent < 85) {
-                barEl.classList.add('injection-high');
-            } else {
-                barEl.classList.add('injection-critical');
-            }
+            if (percent < 30) barEl.classList.add('injection-low');
+            else if (percent < 60) barEl.classList.add('injection-medium');
+            else if (percent < 85) barEl.classList.add('injection-high');
+            else barEl.classList.add('injection-critical');
         }
         
-        // Met à jour le total production
+        // === INTENSITÉS TRIPHASÉ ===
+        function updatePhaseVumeter(phase, value, collectDate, valueDate) {
+            var valueEl = document.getElementById('phase' + phase + '-value-' + eqLogicId);
+            var barEl = document.getElementById('phase' + phase + '-bar-' + eqLogicId);
+            if (!valueEl || !barEl) return;
+            
+            var numValue = parseFloat(value) || 0;
+            var percent = Math.min((numValue / triphaseImax) * 100, 100);
+            
+            valueEl.textContent = formatNumber(numValue, 0) + ' A';
+            if (collectDate) valueEl.setAttribute('data-collect-date', collectDate);
+            if (valueDate) valueEl.setAttribute('data-value-date', valueDate);
+            animateIfChanged(valueEl, 'phase' + phase, value);
+            
+            barEl.style.width = percent + '%';
+            barEl.classList.remove('low', 'medium', 'high', 'critical');
+            if (percent < 30) barEl.classList.add('low');
+            else if (percent < 60) barEl.classList.add('medium');
+            else if (percent < 85) barEl.classList.add('high');
+            else barEl.classList.add('critical');
+        }
+        
+        function updatePhaseIntensity(cmdId, value, collectDate, valueDate) {
+            if (cmdId && phase1CmdId && cmdId.toString() === phase1CmdId) updatePhaseVumeter(1, value, collectDate, valueDate);
+            else if (cmdId && phase2CmdId && cmdId.toString() === phase2CmdId) updatePhaseVumeter(2, value, collectDate, valueDate);
+            else if (cmdId && phase3CmdId && cmdId.toString() === phase3CmdId) updatePhaseVumeter(3, value, collectDate, valueDate);
+        }
+        
         function updateTotalProd() {
             var consoEl = document.getElementById('prod-conso-' + eqLogicId);
             var totalProdEl = document.getElementById('total-prod-' + eqLogicId);
             var totalProdCoutEl = document.getElementById('total-prod-cout-' + eqLogicId);
             
-            if (consoEl && totalProdEl) {
-                totalProdEl.textContent = consoEl.textContent;
-            }
-            
+            if (consoEl && totalProdEl) totalProdEl.textContent = consoEl.textContent;
             if (consoEl && totalProdCoutEl && coutProdKwh > 0) {
                 var consoWh = parseFloat(consoEl.textContent.replace(/[^\d,]/g, '').replace(',', '.')) * 1000;
-                var cout = (consoWh / 1000) * coutProdKwh;
-                totalProdCoutEl.textContent = formatNumber(cout, 2) + ' €';
+                totalProdCoutEl.textContent = formatNumber((consoWh / 1000) * coutProdKwh, 2) + ' €';
             }
         }
         
@@ -875,65 +771,42 @@
             var container = document.getElementById('teleinfo-container-' + eqLogicId);
             if (!container) return;
             
-            var totalConso = 0;
-            var totalCout = 0;
+            var totalConso = 0, totalCout = 0;
             
             if (isStandardMode) {
                 var row0 = container.querySelector('#section-conso-' + eqLogicId + ' [data-row-index="0"]');
                 if (row0) {
                     var consoText = row0.querySelector('.conso-number');
                     var coutText = row0.querySelector('.cout-number');
-                    
-                    if (consoText) {
-                        totalConso = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-                    }
-                    if (coutText) {
-                        totalCout = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-                    }
+                    if (consoText) totalConso = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+                    if (coutText) totalCout = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
                 }
             } else {
                 for (var key in indexData) {
-                    var index = indexData[key];
-                    if (!index.display) continue;
-                    
+                    if (!indexData[key].display) continue;
                     var row = container.querySelector('#section-conso-' + eqLogicId + ' [data-row-index="' + key + '"]');
                     if (!row) continue;
-                    
                     var consoText = row.querySelector('.conso-number');
                     var coutText = row.querySelector('.cout-number');
-                    
-                    if (consoText) {
-                        var consoVal = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
-                        if (!isNaN(consoVal)) totalConso += consoVal;
-                    }
-                    if (coutText) {
-                        var coutVal = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
-                        if (!isNaN(coutVal)) totalCout += coutVal;
-                    }
+                    if (consoText) { var v = parseFloat(consoText.textContent.replace(/[^\d,]/g, '').replace(',', '.')); if (!isNaN(v)) totalConso += v; }
+                    if (coutText) { var v = parseFloat(coutText.textContent.replace(/[^\d,]/g, '').replace(',', '.')); if (!isNaN(v)) totalCout += v; }
                 }
             }
             
             var totalConsoEl = document.getElementById('total-conso-' + eqLogicId);
             var totalCoutEl = document.getElementById('total-cout-' + eqLogicId);
-            
             if (totalConsoEl) totalConsoEl.textContent = formatNumber(totalConso, 2) + ' kWh';
             if (totalCoutEl) totalCoutEl.textContent = formatNumber(totalCout, 2) + ' €';
         }
         
-        // Met à jour une commande dans le tableau "toutes les commandes"
         function updateAllCmd(cmdId, value, collectDate, valueDate) {
             if (!allCmdsData || !hasAllCmds) return;
-            
             for (var key in allCmdsData) {
                 var cmd = allCmdsData[key];
                 if (cmd.id && cmd.id.toString() === cmdId.toString()) {
                     var valueEl = document.getElementById('all-cmd-value-' + cmdId);
                     if (valueEl) {
-                        var displayValue = value;
-                        if (cmd.subtype === 'numeric') {
-                            displayValue = formatNumber(parseFloat(value), cmd.decimals || 0);
-                        }
-                        valueEl.textContent = displayValue;
+                        valueEl.textContent = cmd.subtype === 'numeric' ? formatNumber(parseFloat(value), cmd.decimals || 0) : value;
                         if (collectDate) valueEl.setAttribute('data-collect-date', collectDate);
                         if (valueDate) valueEl.setAttribute('data-value-date', valueDate);
                         animateIfChanged(valueEl, 'all_cmd_' + cmdId, value);
@@ -944,189 +817,87 @@
         }
         
         function updateValue(cmdId, value, collectDate, valueDate) {
-            // Mise à jour de l'abonnement
-            if (cmdId && subscriptionCmdId && cmdId.toString() === subscriptionCmdId.toString()) {
-                updateSubscription(value, collectDate, valueDate);
-                return;
-            }
-            
-            // Mise à jour du tarif
-            if (cmdId && tarifCmdId && cmdId.toString() === tarifCmdId.toString()) {
-                updateTarif(value, collectDate, valueDate);
-                return;
-            }
-            
-            // Vumètre consommation (PAPP/SINSTS)
-            if (cmdId && pappCmdId && cmdId.toString() === pappCmdId.toString()) {
-                updateVumeterConso(value, collectDate, valueDate);
-                return;
-            }
-            
-            // Vumètre production (SINSTI)
-            if (cmdId && sinstiCmdId && cmdId.toString() === sinstiCmdId.toString()) {
-                updateVumeterProd(value, collectDate, valueDate);
-                return;
-            }
-            
-            // Index EAIT
+            if (cmdId && subscriptionCmdId && cmdId.toString() === subscriptionCmdId.toString()) { updateSubscription(value, collectDate, valueDate); return; }
+            if (cmdId && tarifCmdId && cmdId.toString() === tarifCmdId.toString()) { updateTarif(value, collectDate, valueDate); return; }
+            if (cmdId && pappCmdId && cmdId.toString() === pappCmdId.toString()) { updateVumeterConso(value, collectDate, valueDate); return; }
+            if (cmdId && sinstiCmdId && cmdId.toString() === sinstiCmdId.toString()) { updateVumeterProd(value, collectDate, valueDate); return; }
             if (cmdId && eaitCmdId && cmdId.toString() === eaitCmdId.toString()) {
-                var eaitValueEl = document.getElementById('eait-value-' + eqLogicId);
-                if (eaitValueEl) {
-                    eaitValueEl.textContent = formatNumber(parseFloat(value), 0);
-                    if (collectDate) eaitValueEl.setAttribute('data-collect-date', collectDate);
-                    if (valueDate) eaitValueEl.setAttribute('data-value-date', valueDate);
-                    animateIfChanged(eaitValueEl, 'eait_value', value);
-                }
+                var e = document.getElementById('eait-value-' + eqLogicId);
+                if (e) { e.textContent = formatNumber(parseFloat(value), 0); if (collectDate) e.setAttribute('data-collect-date', collectDate); if (valueDate) e.setAttribute('data-value-date', valueDate); animateIfChanged(e, 'eait_value', value); }
                 return;
             }
-            
-            // Stat production du jour
             if (cmdId && statProdCmdId && cmdId.toString() === statProdCmdId.toString()) {
-                var prodConsoEl = document.getElementById('prod-conso-' + eqLogicId);
-                var prodCoutEl = document.getElementById('prod-cout-' + eqLogicId);
-                
-                if (prodConsoEl) {
-                    prodConsoEl.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh';
-                    if (collectDate) prodConsoEl.setAttribute('data-collect-date', collectDate);
-                    if (valueDate) prodConsoEl.setAttribute('data-value-date', valueDate);
-                    animateIfChanged(prodConsoEl, 'prod_conso', value);
-                }
-                
-                if (prodCoutEl && coutProdKwh > 0) {
-                    var cout = (parseFloat(value) / 1000) * coutProdKwh;
-                    prodCoutEl.textContent = formatNumber(cout, 2) + ' €';
-                    animateIfChanged(prodCoutEl, 'prod_cout', cout);
-                }
-                
+                var cEl = document.getElementById('prod-conso-' + eqLogicId);
+                var coutEl = document.getElementById('prod-cout-' + eqLogicId);
+                if (cEl) { cEl.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh'; if (collectDate) cEl.setAttribute('data-collect-date', collectDate); if (valueDate) cEl.setAttribute('data-value-date', valueDate); animateIfChanged(cEl, 'prod_conso', value); }
+                if (coutEl && coutProdKwh > 0) { coutEl.textContent = formatNumber((parseFloat(value) / 1000) * coutProdKwh, 2) + ' €'; animateIfChanged(coutEl, 'prod_cout', value); }
                 updateTotalProd();
                 return;
             }
+            // Triphasé
+            if (hasTriphase) {
+                updatePhaseIntensity(cmdId, value, collectDate, valueDate);
+            }
             
-            // Index consommation
             var container = document.getElementById('teleinfo-container-' + eqLogicId);
             if (!container) return;
-            
             var consoSection = document.getElementById('section-conso-' + eqLogicId);
             if (consoSection) {
                 for (var key in indexData) {
                     var index = indexData[key];
                     var row = consoSection.querySelector('[data-row-index="' + key + '"]');
                     if (!row) continue;
-                    
                     if (index.cmd_id && index.cmd_id.toString() === cmdId.toString()) {
-                        var valueCell = row.querySelector('.value-number');
-                        if (valueCell) {
-                            valueCell.textContent = formatNumber(parseFloat(value), 0);
-                            if (collectDate) valueCell.setAttribute('data-collect-date', collectDate);
-                            if (valueDate) valueCell.setAttribute('data-value-date', valueDate);
-                            animateIfChanged(valueCell, key + '_value', value);
-                        }
+                        var vCell = row.querySelector('.value-number');
+                        if (vCell) { vCell.textContent = formatNumber(parseFloat(value), 0); if (collectDate) vCell.setAttribute('data-collect-date', collectDate); if (valueDate) vCell.setAttribute('data-value-date', valueDate); animateIfChanged(vCell, key + '_value', value); }
                         return;
                     }
-                    
                     if (index.stat_conso_id && index.stat_conso_id.toString() === cmdId.toString()) {
-                        var consoCell = row.querySelector('.conso-number');
-                        if (consoCell) {
-                            consoCell.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh';
-                            if (collectDate) consoCell.setAttribute('data-collect-date', collectDate);
-                            if (valueDate) consoCell.setAttribute('data-value-date', valueDate);
-                            animateIfChanged(consoCell, key + '_conso', value);
-                        }
+                        var cCell = row.querySelector('.conso-number');
+                        if (cCell) { cCell.textContent = formatNumber(parseFloat(value) / 1000, 2) + ' kWh'; if (collectDate) cCell.setAttribute('data-collect-date', collectDate); if (valueDate) cCell.setAttribute('data-value-date', valueDate); animateIfChanged(cCell, key + '_conso', value); }
                         updateTotalsConso();
                         return;
                     }
-                    
                     if (index.stat_cout_id && index.stat_cout_id.toString() === cmdId.toString()) {
                         var coutCell = row.querySelector('.cout-number');
-                        if (coutCell) {
-                            coutCell.textContent = formatNumber(parseFloat(value), 2) + ' €';
-                            if (collectDate) coutCell.setAttribute('data-collect-date', collectDate);
-                            if (valueDate) coutCell.setAttribute('data-value-date', valueDate);
-                            animateIfChanged(coutCell, key + '_cout', value);
-                        }
+                        if (coutCell) { coutCell.textContent = formatNumber(parseFloat(value), 2) + ' €'; if (collectDate) coutCell.setAttribute('data-collect-date', collectDate); if (valueDate) coutCell.setAttribute('data-value-date', valueDate); animateIfChanged(coutCell, key + '_cout', value); }
                         updateTotalsConso();
                         return;
                     }
                 }
             }
-            
-            // Vérifier si c'est une commande du tableau "toutes les commandes"
             updateAllCmd(cmdId, value, collectDate, valueDate);
         }
         
-        // Enregistrer les listeners pour l'abonnement et le tarif
-        if (subscriptionCmdId) {
-            jeedom.cmd.addUpdateFunction(subscriptionCmdId, function(_options) {
-                updateSubscription(_options.value, _options.collectDate, _options.valueDate);
-            });
-        }
+        // Enregistrer les listeners
+        if (subscriptionCmdId) jeedom.cmd.addUpdateFunction(subscriptionCmdId, function(_options) { updateSubscription(_options.value, _options.collectDate, _options.valueDate); });
+        if (tarifCmdId) jeedom.cmd.addUpdateFunction(tarifCmdId, function(_options) { updateTarif(_options.value, _options.collectDate, _options.valueDate); });
         
-        if (tarifCmdId) {
-            jeedom.cmd.addUpdateFunction(tarifCmdId, function(_options) {
-                updateTarif(_options.value, _options.collectDate, _options.valueDate);
-            });
-        }
-        
-        // Enregistrer les listeners pour les index consommation
         for (let key in indexData) {
             let index = indexData[key];
-            
-            if (index.cmd_id) {
-                jeedom.cmd.addUpdateFunction(index.cmd_id, function(_options) {
-                    updateValue(index.cmd_id, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
-            
-            if (index.stat_conso_id) {
-                jeedom.cmd.addUpdateFunction(index.stat_conso_id, function(_options) {
-                    updateValue(index.stat_conso_id, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
-            
-            if (index.stat_cout_id) {
-                jeedom.cmd.addUpdateFunction(index.stat_cout_id, function(_options) {
-                    updateValue(index.stat_cout_id, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
+            if (index.cmd_id) jeedom.cmd.addUpdateFunction(index.cmd_id, function(_options) { updateValue(index.cmd_id, _options.value, _options.collectDate, _options.valueDate); });
+            if (index.stat_conso_id) jeedom.cmd.addUpdateFunction(index.stat_conso_id, function(_options) { updateValue(index.stat_conso_id, _options.value, _options.collectDate, _options.valueDate); });
+            if (index.stat_cout_id) jeedom.cmd.addUpdateFunction(index.stat_cout_id, function(_options) { updateValue(index.stat_cout_id, _options.value, _options.collectDate, _options.valueDate); });
         }
         
-        // Listener pour PAPP/SINSTS
-        if (pappCmdId) {
-            jeedom.cmd.addUpdateFunction(pappCmdId, function(_options) {
-                updateValue(pappCmdId, _options.value, _options.collectDate, _options.valueDate);
-            });
-        }
+        if (pappCmdId) jeedom.cmd.addUpdateFunction(pappCmdId, function(_options) { updateValue(pappCmdId, _options.value, _options.collectDate, _options.valueDate); });
         
-        // Listeners pour Production (si activée)
         if (hasProduction) {
-            if (sinstiCmdId) {
-                jeedom.cmd.addUpdateFunction(sinstiCmdId, function(_options) {
-                    updateValue(sinstiCmdId, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
-            
-            if (eaitCmdId) {
-                jeedom.cmd.addUpdateFunction(eaitCmdId, function(_options) {
-                    updateValue(eaitCmdId, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
-            
-            if (statProdCmdId) {
-                jeedom.cmd.addUpdateFunction(statProdCmdId, function(_options) {
-                    updateValue(statProdCmdId, _options.value, _options.collectDate, _options.valueDate);
-                });
-            }
+            if (sinstiCmdId) jeedom.cmd.addUpdateFunction(sinstiCmdId, function(_options) { updateValue(sinstiCmdId, _options.value, _options.collectDate, _options.valueDate); });
+            if (eaitCmdId) jeedom.cmd.addUpdateFunction(eaitCmdId, function(_options) { updateValue(eaitCmdId, _options.value, _options.collectDate, _options.valueDate); });
+            if (statProdCmdId) jeedom.cmd.addUpdateFunction(statProdCmdId, function(_options) { updateValue(statProdCmdId, _options.value, _options.collectDate, _options.valueDate); });
         }
         
-        // Listeners pour toutes les commandes (si activé)
+        if (hasTriphase) {
+            if (phase1CmdId) jeedom.cmd.addUpdateFunction(phase1CmdId, function(_options) { updatePhaseIntensity(phase1CmdId, _options.value, _options.collectDate, _options.valueDate); });
+            if (phase2CmdId) jeedom.cmd.addUpdateFunction(phase2CmdId, function(_options) { updatePhaseIntensity(phase2CmdId, _options.value, _options.collectDate, _options.valueDate); });
+            if (phase3CmdId) jeedom.cmd.addUpdateFunction(phase3CmdId, function(_options) { updatePhaseIntensity(phase3CmdId, _options.value, _options.collectDate, _options.valueDate); });
+        }
+        
         if (hasAllCmds && allCmdsData) {
             for (let key in allCmdsData) {
                 let cmd = allCmdsData[key];
-                if (cmd.id) {
-                    jeedom.cmd.addUpdateFunction(cmd.id, function(_options) {
-                        updateAllCmd(cmd.id, _options.value, _options.collectDate, _options.valueDate);
-                    });
-                }
+                if (cmd.id) jeedom.cmd.addUpdateFunction(cmd.id, function(_options) { updateAllCmd(cmd.id, _options.value, _options.collectDate, _options.valueDate); });
             }
         }
         

@@ -3034,7 +3034,120 @@ public function toHtml($_version = 'dashboard', $eqLogic = null) {
     } elseif ($pappPercent >= 30) {
         $pappBarClass = 'medium';
     }
+
+    // === INTENSITÉS TRIPHASÉ ===
+    $displayTriphase = intval($eqLogic->getConfiguration('display_triphase', 0));
+    $hasTriphase = ($displayTriphase == 1);
     
+    // Données des intensités
+    $triphaseData = array();
+    $triphaseSectionHtml = '';
+    $imaxParPhase  = 0;
+    
+    if ($hasTriphase) {
+        // Calcul de l'intensité max par phase
+        if ($isStandardMode) {
+            // Mode Standard: IMAX = pmax / 3 / 200 (mode de calcul enedis)
+            $imaxParPhase = round($pappMax / 3 / 200, 1);
+            if ($imaxParPhase <= 0) $imaxParPhase = 30; // Valeur par défaut
+            
+            // Commandes IRMS1, IRMS2, IRMS3
+            $phaseCommands = array(
+                1 => array('cmd' => 'IRMS1', 'label' => 'Phase 1'),
+                2 => array('cmd' => 'IRMS2', 'label' => 'Phase 2'),
+                3 => array('cmd' => 'IRMS3', 'label' => 'Phase 3')
+            );
+        } else {
+            // Mode Historique: ISOUSC = intensité souscrite (max)
+            $cmdISOUSC = $eqLogic->getCmd('info', 'ISOUSC');
+            $imaxParPhase = 0;
+            if (is_object($cmdISOUSC)) {
+                $imaxParPhase = floatval($cmdISOUSC->execCmd());
+            }
+            if ($imaxParPhase <= 0) $imaxParPhase = round($pappMax / 3 / 200, 1); //calcul identique à celui du mode standard
+            
+            // Commandes IINST1, IINST2, IINST3
+            $phaseCommands = array(
+                1 => array('cmd' => 'IINST1', 'label' => 'Phase 1'),
+                2 => array('cmd' => 'IINST2', 'label' => 'Phase 2'),
+                3 => array('cmd' => 'IINST3', 'label' => 'Phase 3')
+            );
+        }
+        
+        // Récupérer les valeurs pour chaque phase
+        foreach ($phaseCommands as $phase => $phaseInfo) {
+            $cmdName = $phaseInfo['cmd'];
+            $cmdPhase = $eqLogic->getCmd('info', $cmdName);
+            
+            $phaseValue = 0;
+            $phaseCmdId = '';
+            $phaseCollectDate = '';
+            $phaseValueDate = '';
+            
+            if (is_object($cmdPhase)) {
+                $phaseValue = floatval($cmdPhase->execCmd());
+                $phaseCmdId = $cmdPhase->getId();
+                $phaseCollectDate = $cmdPhase->getCollectDate();
+                $phaseValueDate = $cmdPhase->getValueDate();
+            }
+            
+            $phasePercent = ($imaxParPhase > 0) ? min(($phaseValue / $imaxParPhase) * 100, 100) : 0;
+            $phaseBarClass = 'low';
+            if ($phasePercent >= 85) {
+                $phaseBarClass = 'critical';
+            } elseif ($phasePercent >= 60) {
+                $phaseBarClass = 'high';
+            } elseif ($phasePercent >= 30) {
+                $phaseBarClass = 'medium';
+            }
+            
+            $triphaseData[$phase] = array(
+                'cmd_id' => $phaseCmdId,
+                'value' => $phaseValue,
+                'max' => $imaxParPhase,
+                'percent' => $phasePercent,
+                'bar_class' => $phaseBarClass,
+                'collect_date' => $phaseCollectDate,
+                'value_date' => $phaseValueDate,
+                'label' => $phaseInfo['label']
+            );
+        }
+        
+        // Générer le HTML des vumètres triphasé
+        $triphaseVumetersHtml = '';
+        foreach ($triphaseData as $phase => $data) {
+            $triphaseVumetersHtml .= '
+            <div class="teleinfo-vumeter teleinfo-vumeter-phase" id="vumeter-phase' . $phase . '-' . $eqLogic->getId() . '">
+                <div class="vumeter-header">
+                    <span class="vumeter-label">' . $data['label'] . '</span>
+                    <span class="vumeter-value tooltip-trigger" 
+                          id="phase' . $phase . '-value-' . $eqLogic->getId() . '"
+                          data-collect-date="' . htmlspecialchars($data['collect_date']) . '"
+                          data-value-date="' . htmlspecialchars($data['value_date']) . '">' . $this->formatNumber($data['value'], 0) . ' A</span>
+                </div>
+                <div class="vumeter-bar-container">
+                    <div class="vumeter-bar ' . $data['bar_class'] . '" id="phase' . $phase . '-bar-' . $eqLogic->getId() . '" style="width: ' . number_format($data['percent'], 1, '.', '') . '%;"></div>
+                </div>
+                <div class="vumeter-scale">
+                    <span>0</span>
+                    <span>' . $this->formatNumber($data['max'], 0) . ' A</span>
+                </div>
+            </div>';
+        }
+        
+        // Générer le HTML de la section triphasé
+        $triphaseSectionHtml = '<div class="teleinfo-section triphase" id="section-triphase-' . $eqLogic->getId() . '">
+            <div class="section-header">
+                <span class="section-title">Intensités par Phase</span>
+                <span class="section-badge badge-triphase">Triphasé</span>
+            </div>
+            <div class="triphase-vumeters-container">
+                ' . $triphaseVumetersHtml . '
+            </div>
+        </div>';
+    }
+
+
     // === SECTION PRODUCTION ===
     $productionSectionHtml = '';
     $sinstiCmdId = '';
@@ -3260,7 +3373,6 @@ public function toHtml($_version = 'dashboard', $eqLogic = null) {
 
     // Préparer les replacements pour le template
     $replace = array(
-        // Placeholders standards Jeedom
         '#id#' => $eqLogic->getId(),
         '#name#' => $eqLogic->getName(),
         '#name_display#' => $eqLogic->getName(),
@@ -3309,6 +3421,12 @@ public function toHtml($_version = 'dashboard', $eqLogic = null) {
         '#papp_collect_date#' => htmlspecialchars($pappCollectDate),
         '#papp_value_date#' => htmlspecialchars($pappValueDate),
         
+        // Triphasé
+        '#has_triphase#' => $hasTriphase ? 'true' : 'false',
+        '#triphase_section_html#' => $triphaseSectionHtml,
+        '#triphase_data#' => json_encode($triphaseData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+        '#triphase_imax#' => strval($imaxParPhase),
+
         // Production
         '#has_production#' => $hasProduction ? 'true' : 'false',
         '#production_section_html#' => $productionSectionHtml,
@@ -3348,21 +3466,19 @@ private function getTarifClass($tarif) {
 
     $tarif = strtoupper($tarif);
     
-    // === TEMPO: Vérifier les COULEURS en PREMIER (la couleur prime sur HP/HC) ===
-    // Tempo - Bleu (prix bas)
+    // Tempo - Bleu
     if (strpos($tarif, 'BLEU') !== false || strpos($tarif, 'JB') !== false) {
         return 'tarif-bleu';
     }
-    // Tempo - Blanc (prix moyen)
+    // Tempo - Blanc
     if (strpos($tarif, 'BLANC') !== false || strpos($tarif, 'JW') !== false) {
         return 'tarif-blanc';
     }
-    // Tempo - Rouge (prix élevé)
+    // Tempo - Rouge
     if (strpos($tarif, 'ROUGE') !== false || strpos($tarif, 'JR') !== false) {
         return 'tarif-rouge';
     }
     
-    // === TYPES CLASSIQUES HP/HC ===
     // Heures Pleines
     if (strpos($tarif, 'HP') !== false) {
         return 'tarif-hp';
@@ -3371,6 +3487,7 @@ private function getTarifClass($tarif) {
     if (strpos($tarif, 'HC') !== false) {
         return 'tarif-hc';
     }
+
     // Heures de pointe
     if (strpos($tarif, 'PM') !== false) {
         return 'tarif-pointe';

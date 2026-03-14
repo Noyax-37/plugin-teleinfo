@@ -201,11 +201,21 @@ switch ($controlerState) {
 
                         <div class="form-group template-config-field">
                             <label class="col-lg-1"> </label>
-							<label class="col-lg-3 control-label pull-left">{{Si template: puissance max en VA? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour que l'animation du vumètre de SINSTS soit cohérente}}"></i></sup></label>
+							<label class="col-lg-3 control-label pull-left">{{Si template: puissance max en VA? }} <sup><i class="fas fa-question-circle tooltips" title="{{Utile uniquement pour le template pour que l'animation du vumètre de conso soit cohérente
+                                                                                                                                                                            et pour calculer le Imax par phase en mode standard pour du triphasé}}"></i></sup></label>
 							<div class="col-sm-2">
 								<input type="text" id="template_pmax" class="eqLogicAttr configKey form-control" data-l1key="configuration" data-l2key="pmax" placeholder="12000">
 							</div>
 						</div>
+
+                        <div class="form-group template-config-field">
+                            <label class="col-lg-1"> </label>
+                            <label class="col-lg-3 control-label pull-left">{{Afficher intensités triphasé}} <sup><i class="fas fa-question-circle tooltips" title="Affiche 3 vumètres pour les intensités de chaque phase (IINST1/2/3 en historique, IRMS1/2/3 en standard)."></i></sup></label>
+                            <div class="col-sm-6">
+                                <input type="checkbox" id="template_display_triphase" class="eqLogicAttr" 
+                                    data-l1key="configuration" data-l2key="display_triphase">
+                            </div>
+                        </div>
 
                         <div class="form-group template-config-field">
                             <label class="col-lg-1"> </label>
@@ -227,7 +237,7 @@ switch ($controlerState) {
                             <label class="col-lg-1"> </label>
                             <label class="col-lg-3 control-label pull-left">{{Taille texte vumètres (px ou em ou %)}} <sup><i class="fas fa-question-circle tooltips" title="Laissez vide pour garder la valeur par défaut (≈ 0.95em / 16px)"></i></sup></label>
                             <div class="col-sm-2">
-                                <input type="text" class="eqLogicAttr form-control input-sm" 
+                                <input type="text" class="eqLogicAttr form-control" 
                                     data-l1key="configuration" data-l2key="vumeter_font_size" 
                                     placeholder="1.1em ou 18px ou 120%" value="1.1em" />
                             </div>
@@ -664,6 +674,32 @@ $(document).ready(function() {
     setTimeout(function() {
         updateValueColorPicker();
     }, 200);
+});
+
+//  Griser / activer le champ "p max injection" selon ActivationProduction
+function updateInjectionFieldState() {
+    var productionActive = $('#activation_production').is(':checked');
+    var $sinstiField = $('#template_sinsti_max').closest('.form-group.template-config-field');
+
+    if (productionActive) {
+        $sinstiField.removeClass('disabled');
+        $('#template_sinsti_max').prop('disabled', false);
+    } else {
+        $sinstiField.addClass('disabled');
+        $('#template_sinsti_max').prop('disabled', true);
+    }
+}
+
+// Initialisation au chargement
+$(document).ready(function() {
+    setTimeout(function() {
+        updateInjectionFieldState();
+    }, 150);
+});
+
+// Écoute du changement de la case "Compteur en mode conso ET prod"
+$('#activation_production').on('change', function() {
+    updateInjectionFieldState();
 });
 
 </script>
