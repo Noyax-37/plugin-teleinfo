@@ -830,483 +830,470 @@ class teleinfo extends eqLogic
 
     public static function calculateTodayStats()
     {
-        $indexConsoHP      = config::byKey('indexConsoHP', 'teleinfo', 'EASF02,EASF04,EASF06,HCHP,BBRHPJB,BBRHPJW,BBRHPJR,EJPHPM');
-        $indexConsoHC      = config::byKey('indexConsoHC', 'teleinfo', 'EASF01,EASF03,EASF05,HCHC,BBRHCJB,BBRHCJW,BBRHCJR,EJPHN');
-        $indexProduction   = config::byKey('indexProduction', 'teleinfo', 'EAIT');
-        $indexConsoTotales   = config::byKey('indexConsoTotales', 'teleinfo', 'BASE,EAST,HCHP,HCHC,BBRHPJB,BBRHPJW,BBRHPJR,BBRHCJB,BBRHCJW,BBRHCJR,EJPHPM,EJPHN');
-
-
-        log::add('teleinfo', 'info', '----- Calcul des statistiques temps réel -----');
-        $startDateToday            = (new DateTime())->setTimestamp(mktime(0, 0, 0, date("m"), date("d"), date("Y")));
-        $endDateToday              = (new DateTime())->setTimestamp(mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y")));
+        $indexConsoHP = config::byKey('indexConsoHP', 'teleinfo', 'EASF02,EASF04,EASF06,HCHP,BBRHPJB,BBRHPJW,BBRHPJR,EJPHPM');
+        $indexConsoHC = config::byKey('indexConsoHC', 'teleinfo', 'EASF01,EASF03,EASF05,HCHC,BBRHCJB,BBRHCJW,BBRHCJR,EJPHN');
+        $initialIndexProduction = config::byKey('indexProduction', 'teleinfo', 'EAIT');
+        $indexConsoTotales = config::byKey('indexConsoTotales', 'teleinfo', 'BASE,EAST,HCHP,HCHC,BBRHPJB,BBRHPJW,BBRHPJR,BBRHCJB,BBRHCJW,BBRHCJR,EJPHPM,EJPHN');
+        
+        log::add('teleinfo', 'info', '----------- Calcul des statistiques temps réel -----------');
+        
+        $todayDate = date('Y-m-d');
+        $startDateToday = (new DateTime())->setTimestamp(mktime(0, 0, 0, date("m"), date("d"), date("Y")));
+        $endDateToday = (new DateTime())->setTimestamp(mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y")));
+        
+        // === NETTOYAGE DES ANCIENNES CLÉS EN CONFIG (une seule fois par jour) ===
+        $cleanupDone = cache::byKey('teleinfo::todayStats::cleanupDone::' . $todayDate);
+        if (!is_object($cleanupDone) || $cleanupDone->getValue() !== '1') {
+            $prefix = 'todayStats_';
+            $todayPrefix = $prefix . $todayDate . '_';
+            $yesterdayDate = date('Y-m-d', strtotime('-1 day'));
+            $yesterdayPrefix = $prefix . $yesterdayDate . '_';
+            
+            $configs = config::searchKey($prefix, 'teleinfo');
+            $kept = 0;
+            $removed = 0;
+            foreach ($configs as $key => $value) {
+                // Garder les clés du jour courant ET de la veille (pour la tendance)
+                if (strpos($value['key'], $todayPrefix) === 0 || strpos($value['key'], $yesterdayPrefix) === 0) {
+                    $kept++;
+                    continue;
+                }
+                config::remove($value['key'], 'teleinfo');
+                $removed++;
+            }
+            
+            log::add('teleinfo', 'info', "Nettoyage todayStats : $kept conservées (jour courant + veille), $removed supprimées (anciennes)");
+            
+            // Marquer le nettoyage comme fait pour aujourd'hui
+            cache::set('teleinfo::todayStats::cleanupDone::' . $todayDate, '1', 172800);
+        }
+        
         log::add('teleinfo', 'info', 'Date de début : ' . $startDateToday->format('Y-m-d 00:00:00'));
-        log::add('teleinfo', 'info', 'Date de fin   : ' . $endDateToday->format('Y-m-d H:i:s'));
-        log::add('teleinfo', 'info', 'Liste index HP            : ' . $indexConsoHP);
-        log::add('teleinfo', 'info', 'Liste index HC            : ' . $indexConsoHC);
-        log::add('teleinfo', 'info', 'Liste index Production    : ' . $indexProduction);
-        log::add('teleinfo', 'info', 'Liste index Conso Totale  : ' . $indexConsoTotales);
-
-
+        log::add('teleinfo', 'info', 'Date de fin : ' . $endDateToday->format('Y-m-d H:i:s'));
+        log::add('teleinfo', 'info', '---------- infos de la configuration ancienne méthode ----------');
+        log::add('teleinfo', 'info', 'Liste index HP : ' . $indexConsoHP);
+        log::add('teleinfo', 'info', 'Liste index HC : ' . $indexConsoHC);
+        log::add('teleinfo', 'info', 'Liste index Production : ' . $initialIndexProduction);
+        log::add('teleinfo', 'info', 'Liste index Conso Totale : ' . $indexConsoTotales);
+        
         foreach (eqLogic::byType('teleinfo') as $eqLogic) {
-
-            log::add('teleinfo', 'info', '----------------------------------------------');
+            log::add('teleinfo', 'info', '---------------------------------------------------------------');
             log::add('teleinfo', 'info', 'Objet : ' . $eqLogic->getName());
 
-            $statTodayHp       = 0;
-            $statTodayHc       = 0;
-            $statTodayProd     = 0;
-            $statYesterdayHp   = 0;
-            $statYesterdayHc   = 0;
-            $typeTendance      = 0;
-            $statToday         = 0;
-			$index             = '';
-            $statHpToCumul     = array();
-            $statHcToCumul     = array();
-            $statProdToCumul   = array();
-			$statTotalToCumul  = array();
-            $statTotalMaxToday = 0;
-            $statTotalMinToday = 0;
-            $statTodayTotal = 0;
-            $statYesterdayTotal = 0;
-            $statHcMaxToday = 0;
-            $statHcMinToday = 0;
-            $statHcTotal = 0;
-            $statYesterdayHc = 0;
-            $statHpMaxToday = 0;
-            $statHpMinToday = 0;
-            $statHpTotal = 0;
-            $statYesterdayHp = 0;
-            $statProdMaxToday = 0;
-            $statProdMinToday = 0;
-            $statProdTotal = 0;
-            $statYesterdayProd = 0;
-
-
-
-			// raz des variables
-            for ($i=0; $i <= 10; $i++){
-				if ($i == 10) {   //affectation des variables index en dynamique
-					$a = 'idIndex' . $i;
-					$b = 'statTodayIndex' . $i;
-					$c = 'statYesterdayIndex' . $i;
-                    $d = 'Coutindex' . $i;
-                    $e = 'Coutkwhindex' . $i;
-                    $f = 'index' . $i;
-				} 
-				else {
-					$a = 'idIndex0' . $i;
-					$b = 'statTodayIndex0' . $i;
-					$c = 'statYesterdayIndex0' . $i;
-                    $d = 'Coutindex0' . $i;
-                    $e = 'Coutkwhindex0' . $i;
-                    $f = 'index0' . $i;
-				}
-                $$a = 0;
-                $$b = 0;
-                $$c = 0;
-                $$d = 0;
-                $$e = '';
-                $$f = '';
+            $indexProduction = $initialIndexProduction;
+            if ($eqLogic->getConfiguration('ActivationProduction') == 1 && $indexProduction != 'EAIT') {
+                $indexProduction = 'EAIT';
+                log::add('teleinfo', 'info', "mise à jour de l'index production en EAIT");
             }
 
+            $newIndex = intval($eqLogic->getConfiguration('newIndex',0));
 
-            $index01 = $eqLogic->getConfiguration('index01');
-			$index02 = $eqLogic->getConfiguration('index02');
-			$index03 = $eqLogic->getConfiguration('index03');
-			$index04 = $eqLogic->getConfiguration('index04');
-			$index05 = $eqLogic->getConfiguration('index05');
-			$index06 = $eqLogic->getConfiguration('index06');
-			$index07 = $eqLogic->getConfiguration('index07');
-			$index08 = $eqLogic->getConfiguration('index08');
-			$index09 = $eqLogic->getConfiguration('index09');
-			$index10 = $eqLogic->getConfiguration('index10');
+            $eqId = $eqLogic->getId();
+            $cacheKeyPrefix = 'teleinfo::todayStats::' . $todayDate . '::' . $eqId . '::';
+            $configKeyPrefix = 'todayStats_' . $todayDate . '_' . $eqId . '_';
+            
+            // === FONCTION UTILITAIRE pour récupérer la valeur de départ (cache ou config ou ...) ===
+            $getStartValue = function($cmdId, $keyName) use ($cacheKeyPrefix, $configKeyPrefix, $todayDate, $startDateToday, $endDateToday) {
+                // 1. Essayer le cache
+                $cacheKey = $cacheKeyPrefix . $keyName;
+                $cachedValue = cache::byKey($cacheKey);
+                if (is_object($cachedValue) && $cachedValue->getValue() !== '') {
+                    log::add('teleinfo', 'debug', 'Valeur départ depuis cache pour ' . $keyName . ' : ' . $cachedValue->getValue());
+                    return floatval($cachedValue->getValue());
+                }
+                
+                // 2. Essayer la config (en cas de crash cache)
+                $configKey = $configKeyPrefix . $keyName;
+                $configDateKey = $configKeyPrefix . 'date';
+                $configDate = config::byKey($configDateKey, 'teleinfo', '');
+                
+                if ($configDate === $todayDate) {
+                    $configValue = config::byKey($configKey, 'teleinfo', '');
+                    if ($configValue !== '') {
+                        log::add('teleinfo', 'debug', 'Valeur départ depuis config pour ' . $keyName . ' : ' . $configValue);
+                        // Reconstituer le cache
+                        cache::set($cacheKey, $configValue, 172800);
+                        return floatval($configValue);
+                    }
+                }
+                
+                // 3. Ni cache ni config : essayer le min de la journée (démarrage en cours de journée)
+                $cmd = cmd::byId($cmdId);
+                if (!is_object($cmd)) {
+                    log::add('teleinfo', 'warning', 'Commande introuvable pour ' . $keyName . ' (ID: ' . $cmdId . ')');
+                    return 0;
+                }
+                
+                // Récupérer le minimum de la journée depuis l'historique
+                $statMin = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'));
+                $startValue = null;
+                
+                if (isset($statMin['min']) && $statMin['min'] !== null && $statMin['min'] !== '') {
+                    $startValue = floatval($statMin['min']);
+                    log::add('teleinfo', 'debug', 'Valeur départ depuis min journée pour ' . $keyName . ' : ' . $startValue);
+                } else {
+                    // valeur actuelle si pas d'historique (début de journée, pas encore de données)
+                    $startValue = floatval($cmd->execCmd());
+                    log::add('teleinfo', 'debug', 'Pas de min journée, utilisation valeur actuelle pour ' . $keyName . ' : ' . $startValue);
+                }
+                
+                // Stocker dans le cache (48h)
+                cache::set($cacheKey, $startValue, 172800);
+                
+                // Stocker dans la config (backup)
+                config::save($configKey, $startValue, 'teleinfo');
+                config::save($configDateKey, $todayDate, 'teleinfo');
+                
+                return $startValue;
+            };
+            
+            // === FONCTION UTILITAIRE pour calculer la conso d'une liste de commandes ===
+            $calculateConsoFromList = function($cmdIds, $keyPrefix) use ($getStartValue) {
+                $totalConso = 0;
+                $totalStart = 0;
+                $totalCurrent = 0;
+                
+                foreach ($cmdIds as $cmdId) {
+                    $cmd = cmd::byId($cmdId);
+                    if (!is_object($cmd)) {
+                        continue;
+                    }
+                    
+                    $startValue = $getStartValue($cmdId, $keyPrefix . '_' . $cmdId);
+                    $currentValue = floatval($cmd->execCmd());
+                    
+                    $totalStart += $startValue;
+                    $totalCurrent += $currentValue;
+                    $totalConso += ($currentValue - $startValue);
+                    
+                    log::add('teleinfo', 'debug', 'Cmd ' . $cmdId . ' - Départ: ' . $startValue . ', Actuel: ' . $currentValue . ', Conso: ' . ($currentValue - $startValue));
+                }
+                
+                return $totalConso;
+            };
+            
+            // === IDENTIFICATION DES COMMANDES ===
+            $statHpToCumul = array();
+            $statHcToCumul = array();
+            $statProdToCumul = array();
+            $statTotalToCumul = array();
+            $typeTendance = -1;
+            
+            // Index configurés
+            $configuredIndexes = array();
 
-            $Coutkwhindex00 = $eqLogic->getConfiguration('Coutindex00');
-            $Coutkwhindex01 = $eqLogic->getConfiguration('Coutindex01');
-            $Coutkwhindex02 = $eqLogic->getConfiguration('Coutindex02');
-            $Coutkwhindex03 = $eqLogic->getConfiguration('Coutindex03');
-            $Coutkwhindex04 = $eqLogic->getConfiguration('Coutindex04');
-            $Coutkwhindex05 = $eqLogic->getConfiguration('Coutindex05');
-            $Coutkwhindex06 = $eqLogic->getConfiguration('Coutindex06');
-            $Coutkwhindex07 = $eqLogic->getConfiguration('Coutindex07');
-            $Coutkwhindex08 = $eqLogic->getConfiguration('Coutindex08');
-            $Coutkwhindex09 = $eqLogic->getConfiguration('Coutindex09');
-            $Coutkwhindex10 = $eqLogic->getConfiguration('Coutindex10');
+            // initialisation des variables
+            $statTodayIndex00 = 0;
+            $Coutindex00 = 0;
+            $hasIndex00direct = false;
 
-            $linky = config::byKey('linky', 'teleinfo');
-
-			if ($index01 != '') {
-				log::add('teleinfo', 'info', 'Index 01     --> ' . $index01);
-			}
-			if ($index02 != '') {
-				log::add('teleinfo', 'info', 'Index 02     --> ' . $index02);
-			}
-			if ($index03 != '') {
-				log::add('teleinfo', 'info', 'Index 03     --> ' . $index03);
-			}
-			if ($index04 != '') {
-				log::add('teleinfo', 'info', 'Index 04     --> ' . $index04);
-			}
-			if ($index05 != '') {
-				log::add('teleinfo', 'info', 'Index 05     --> ' . $index05);
-			}
-			if ($index06 != '') {
-				log::add('teleinfo', 'info', 'Index 06     --> ' . $index06);
-			}
-			if ($index07 != '') {
-				log::add('teleinfo', 'info', 'Index 07     --> ' . $index07);
-			}
-			if ($index08 != '') {
-				log::add('teleinfo', 'info', 'Index 08     --> ' . $index08);
-			}
-			if ($index09 != '') {
-				log::add('teleinfo', 'info', 'Index 09     --> ' . $index09);
-			}
-			if ($index10 != '') {
-				log::add('teleinfo', 'info', 'Index 10     --> ' . $index10);
-			}
-
+            if ($newIndex == 1) {
+                for ($i = 0; $i <= 10; $i++) {
+                    $indexNum = str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $indexName = ($i == 0) ? '' : $eqLogic->getConfiguration('index' . $indexNum, '');
+                    $coutKwh = $eqLogic->getConfiguration('Coutindex' . $indexNum, 0);
+                    
+                    $configuredIndexes[$i] = array(
+                        'name' => $indexName,
+                        'cout_kwh' => floatval($coutKwh),
+                        'cmd_id' => null,
+                        'start_value' => null,
+                        'current_value' => null,
+                        'conso' => 0,
+                        'cout' => 0
+                    );
+                }
+            }
+            
+            // Parcourir les commandes pour identification
             foreach ($eqLogic->getCmd('info') as $cmd) {
-                if ($cmd->getConfiguration('type') == "data" || $cmd->getConfiguration('type') == "") {
-                    if (!empty($cmd->getConfiguration('info_conso'))) {
-                        if (strpos($indexConsoHP, $cmd->getConfiguration('info_conso')) !== false) {
+                $infoConso = $cmd->getConfiguration('info_conso');
+                $cmdType = $cmd->getConfiguration('type');
+                
+                // Commandes de données
+                if ($cmdType == "data" || $cmdType == "") {
+                    if (!empty($infoConso)) {
+                        // Catégorisation pour ancienne méthode (modale)
+                        if (strpos($indexConsoHP, $infoConso) !== false) {
                             array_push($statHpToCumul, $cmd->getId());
                         }
-                        if (strpos($indexConsoHC, $cmd->getConfiguration('info_conso')) !== false) {
+                        if (strpos($indexConsoHC, $infoConso) !== false) {
                             array_push($statHcToCumul, $cmd->getId());
                         }
-                        if (strpos($indexProduction, $cmd->getConfiguration('info_conso')) !== false) {
+                        if (strpos($indexProduction, $infoConso) !== false) {
                             array_push($statProdToCumul, $cmd->getId());
                         }
-						if (strpos($indexConsoTotales, $cmd->getConfiguration('info_conso')) !== false) {
-							log::add('teleinfo', 'debug', 'Id Index Global --> ' . $cmd->getId());
-							array_push($statTotalToCumul, $cmd->getId());
-						}
+                        if (strpos($indexConsoTotales, $infoConso) !== false) {
+                            array_push($statTotalToCumul, $cmd->getId());
+                        }
+                        
+                        // Nouveaux Index:
+                        if ($newIndex == 1){
+                            //Index 00 : BASE ou EAST
+                            if ($infoConso == 'BASE' || $infoConso == 'EAST') {
+                                $configuredIndexes[0]['name'] = $infoConso;
+                                $configuredIndexes[0]['cmd_id'] = $cmd->getId();
+                                log::add('teleinfo', 'info', 'Index 00 détecté --> ' . $infoConso . ' (ID: ' . $cmd->getId() . ')');
+                            }
+                            
+                            // Index 01-10
+                            for ($i = 1; $i <= 10; $i++) {
+                                $indexNum = str_pad($i, 2, '0', STR_PAD_LEFT);
+                                if ($infoConso == $configuredIndexes[$i]['name']) {
+                                    $configuredIndexes[$i]['cmd_id'] = $cmd->getId();
+                                    log::add('teleinfo', 'debug', 'Index ' . $indexNum . ' détecté (ID: ' . $cmd->getId() . ')');
+                                }
+                            }
+                        }
                     }
                 }
-                if ($cmd->getConfiguration('info_conso') == "TENDANCE_DAY") {
-                    $typeTendance = $cmd->getConfiguration('type_calcul_tendance');
+                
+                // Détection du type de tendance
+                if ($infoConso == "TENDANCE_DAY") {
+                    $raw = $cmd->getConfiguration('type_calcul_tendance');
+                    if ($raw !== '' && is_numeric($raw)) {
+                        $typeTendance = intval($raw);
+                    }
                 }
-				if (($cmd->getConfiguration('info_conso') == 'BASE') || ($cmd->getConfiguration('info_conso') == 'EAST')) {
-					$index00 = $cmd->getConfiguration('info_conso');
-					$idIndex00 = $cmd->getId();
-					log::add('teleinfo', 'info', 'Index 00     --> ' . $index00);
-					log::add('teleinfo', 'debug', 'Id Index00 ' . $idIndex00);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index01) {
-					$idIndex01 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index01 ' . $idIndex01);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index02) {
-					$idIndex02 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index02 ' . $idIndex02);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index03) {
-					$idIndex03 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index03 ' . $idIndex03);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index04) {
-					$idIndex04 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index04 ' . $idIndex04);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index05) {
-					$idIndex05 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index05 ' . $idIndex05);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index06) {
-					$idIndex06 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index06 ' . $idIndex06);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index07) {
-					$idIndex07 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index07 ' . $idIndex07);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index08) {
-					$idIndex08 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index08 ' . $idIndex08);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index09) {
-					$idIndex09 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index09 ' . $idIndex09);
-				}
-				if ($cmd->getConfiguration('info_conso') == $index10) {
-					$idIndex10 = $cmd->getId();
-					log::add('teleinfo', 'debug', 'Id Index10 ' . $idIndex10);
-				}
-				log::add('teleinfo', 'debug', __('liste des donnees :', __FILE__) . ' ' . $cmd->getConfiguration('info_conso'));
             }
+            
+            // === CALCUL DES CONSOMMATIONS ===
+            // Nouveaux index:
+            if ($newIndex == 1){
+                //1. Calcul pour les index configurés (01-10)
+                for ($i = 1; $i <= 10; $i++) {
+                    $indexNum = str_pad($i, 2, '0', STR_PAD_LEFT);
+                    
+                    if (!empty($configuredIndexes[$i]['cmd_id'])) {
+                        $cmdId = $configuredIndexes[$i]['cmd_id'];
+                        $cmd = cmd::byId($cmdId);
+                        
+                        if (is_object($cmd)) {
+                            $startValue = $getStartValue($cmdId, 'index' . $indexNum);
+                            $currentValue = floatval($cmd->execCmd());
+                            $conso = max(0, $currentValue - $startValue); // Protection contre valeurs négatives
+                            $cout = $conso * $configuredIndexes[$i]['cout_kwh'] / 1000;
+                            
+                            $configuredIndexes[$i]['start_value'] = $startValue;
+                            $configuredIndexes[$i]['current_value'] = $currentValue;
+                            $configuredIndexes[$i]['conso'] = $conso;
+                            $configuredIndexes[$i]['cout'] = $cout;
+                            
+                            // Cumul pour index00 (somme des index configurés)
+                            $statTodayIndex00 += $conso;
+                            $Coutindex00 += $cout;
+                            
+                            if ($conso != 0) log::add('teleinfo', 'info', 'Index ' . $indexNum . ' --> Conso: ' . $conso . ' Wh, Coût: ' . round($cout, 2) . ' €');
+                        }
+                    }
+                }
+                
+                // 2. Calcul pour index00 (BASE/EAST)
+                if (!empty($configuredIndexes[0]['cmd_id'])) {
+                    $cmdId = $configuredIndexes[0]['cmd_id'];
+                    $cmd = cmd::byId($cmdId);
+                    
+                    if (is_object($cmd)) {
+                        $startValue = $getStartValue($cmdId, 'index00');
+                        $currentValue = floatval($cmd->execCmd());
+                        $consoIndex00Direct = max(0, $currentValue - $startValue);
+                        $coutIndex00Direct = $consoIndex00Direct * $configuredIndexes[0]['cout_kwh'] / 1000;
+                        
+                        $configuredIndexes[0]['start_value'] = $startValue;
+                        $configuredIndexes[0]['current_value'] = $currentValue;
+                        $configuredIndexes[0]['conso'] = $consoIndex00Direct;
+                        $configuredIndexes[0]['cout'] = $coutIndex00Direct;
+                        $hasIndex00direct = true;
+                        
+                        log::add('teleinfo', 'info', 'Index 00 (BASE/EAST) --> Conso: ' . $consoIndex00Direct . ' Wh');
+                    }
+                }
+            }
+            
+            // Ancienne méthode:
+            
+            // 3. Calcul HP/HC/Total/Prod
+            $statTodayHp = $calculateConsoFromList($statHpToCumul, 'hp');
+            $statTodayHc = $calculateConsoFromList($statHcToCumul, 'hc');
+            $statTodayProd = $calculateConsoFromList($statProdToCumul, 'prod');
+            $statTodayTotal = $calculateConsoFromList($statTotalToCumul, 'total');
+            
+            log::add('teleinfo', 'info', 'Total HP: ' . $statTodayHp . ' Wh');
+            log::add('teleinfo', 'info', 'Total HC: ' . $statTodayHc . ' Wh');
+            log::add('teleinfo', 'info', 'Total Conso: ' . $statTodayTotal . ' Wh');
+            log::add('teleinfo', 'info', 'Total Prod: ' . $statTodayProd . ' Wh');
+            
+            // 4. Calcul tendance
+            $statYesterday = 0;
+            if ($typeTendance != -1) {
+                $yesterdayDate = date('Y-m-d', strtotime('-1 day'));
+                
+                if ($newIndex == 1) {
+                    $cmdStatToday = $eqLogic->getCmd('info', 'STAT_TODAY_INDEX00');
+                } else {
+                    $cmdStatToday = $eqLogic->getCmd('info', 'STAT_TODAY');
+                }
+                
+                if (is_object($cmdStatToday)) {
+                    $cacheKey = 'teleinfo::yesterdayTotal::' . $yesterdayDate . '::' . $eqId;
+                    
+                    if ($typeTendance === 1) {
+                        // Journée complète
+                        $cachedValue = cache::byKey($cacheKey);
+                        if (is_object($cachedValue) && $cachedValue->getValue() !== '') {
+                            $statYesterday = floatval($cachedValue->getValue());
+                            log::add('teleinfo', 'debug', 'Conso hier (journée) depuis cache : ' . $statYesterday);
+                        } else {
+                            // getStatistique max d'hier
+                            $startdateyesterday = date("Y-m-d H:i:s", mktime(0, 0, 0, date("m"), date("d") - 1, date("Y")));
+                            $enddateyesterday = date("Y-m-d H:i:s", mktime(23, 59, 59, date("m"), date("d") - 1, date("Y")));
+                            $stat = $cmdStatToday->getStatistique($startdateyesterday, $enddateyesterday);
+                            $statYesterday = isset($stat['max']) ? floatval($stat['max']) : 0;
+                            
+                            log::add('teleinfo', 'info', 'Conso hier (journée) depuis getStatistique : ' . $statYesterday);
+                            
+                            // Enregistrer pour les prochains appels
+                            cache::set($cacheKey, $statYesterday, 172800);
+                        }
+                    } else {
+                        // à heure identique
+                        $startdateyesterday = date("Y-m-d H:i:s", mktime(0, 0, 0, date("m"), date("d") - 1, date("Y")));
+                        $enddateyesterday = date("Y-m-d H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d") - 1, date("Y")));
+                        $stat = $cmdStatToday->getStatistique($startdateyesterday, $enddateyesterday);
+                        $statYesterday = isset($stat['max']) ? floatval($stat['max']) : 0;
+                        
+                        log::add('teleinfo', 'info', 'Conso hier à ' . date("H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d") - 1, date("Y"))) . ' depuis getStatistique : ' . $statYesterday);
+                    }
+                }
+                
+                //log::add('teleinfo', 'info', 'Tendance - Conso Hier: ' . $statYesterday . ' Wh, type: ' . ($typeTendance == 1 ? 'journée complète' : 'à heure identique'));
+            }
+            
+            // === MISE À JOUR DES COMMANDES STATISTIQUES ===
 
-            $startdateyesterday = (new DateTime())->setTimestamp(mktime(0, 0, 0, date("m"), date("d") - 1, date("Y")));
-            if ($typeTendance === 1) {
-                $enddateyesterday = date("Y-m-d H:i:s", mktime(23, 59, 59, date("m"), date("d") - 1, date("Y")));
+            // Initialiser la valeur pour la tendance
+            $todayValueForTendance = 0;
+            if ($newIndex == 1) {
+                if ($hasIndex00direct) {
+                    $todayValueForTendance = intval($configuredIndexes[0]['conso']);
+                } else {
+                    $todayValueForTendance = intval($statTodayIndex00);
+                }
             } else {
-                $enddateyesterday = date("Y-m-d H:i:s", mktime(date("H"), date("i"), date("s"), date("m"), date("d") - 1, date("Y")));
+                $todayValueForTendance = intval($statTodayTotal);
             }
 
-            $Coutindex00 = 0;
-			for ($i=0; $i <= 10; $i++){
-				if ($i == 10) {   //affectation des variables index en dynamique
-					$a = 'idIndex' . $i;
-					$b = 'statTodayIndex' . $i;
-					$c = 'statYesterdayIndex' . $i;
-                    $d = 'Coutindex' . $i;
-                    $e = 'Coutkwhindex' . $i;
-				} 
-				else {
-					$a = 'idIndex0' . $i;
-					$b = 'statTodayIndex0' . $i;
-					$c = 'statYesterdayIndex0' . $i;
-                    $d = 'Coutindex0' . $i;
-                    $e = 'Coutkwhindex0' . $i;
-				}
-				if (${$a} >= 1) {
-                    log::add('teleinfo', 'debug', __('Index à trouver', __FILE__) . ' ' . $i . ' = ' . $a);
-					log::add('teleinfo', 'debug', 'Id Index ' . $i . ' = ' . ${$a});
-					$cmd = cmd::byId(${$a});
-					$statMaxToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['max'];
-					$statMinToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['min'];
-					log::add('teleinfo', 'debug', ' ==> Valeur Index ' . $i . ' MAX : ' . intval($statMaxToday));
-					log::add('teleinfo', 'debug', ' ==> Valeur Index ' . $i . ' MIN : ' . intval($statMinToday));
-					$$b = intval($statMaxToday) - intval($statMinToday);
-					log::add('teleinfo', 'debug', 'Total Index ' . $i . ' --> ' . ${$b});
-                    $$d = $$b * floatval($$e) / 1000;
-                    if ($i == 0){
-                        $Coutindex00Init = $Coutindex00;
-                        $statTodayIndex00init = $statTodayIndex00;
-                        $Coutindex00 = 0;
-                        $statTodayIndex00 = 0;
-                    }else{
-                        $statTodayIndex00 += ${$b};
-                        $Coutindex00 += ${$d};
-                        $statTodayIndex00init = 0;
-                        $Coutindex00Init = 0;
-                    }
-                    log::add('teleinfo', 'info', __('Coût Index00', __FILE__) . ' ' . $Coutindex00); 
-					log::add('teleinfo', 'info', __('Coût au kWh Index', __FILE__) . ' ' . $i . ' --> ' .${$e}. __(' coût pour cet index aujourd hui -->', __FILE__) . ' ' .${$d});
-                }
-			}
-            $statTodayIndex00 += $statTodayIndex00init;
-            $Coutindex00 += $Coutindex00Init;
-
-            
-            foreach ($statTotalToCumul as $key => $value) {
-                log::add('teleinfo', 'debug', 'Commande Conso totale N° ' . $value);
-                $cmd            = cmd::byId($value);
-                $statTotalMaxToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['max'];
-                $statTotalMinToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['min'];
-                log::add('teleinfo', 'debug', ' ==> Valeur conso totale MAX : ' . $statTotalMaxToday);
-                log::add('teleinfo', 'debug', ' ==> Valeur consototale MIN : ' . $statTotalMinToday);
-
-                $statTodayTotal     += intval($statTotalMaxToday) - intval($statTotalMinToday);
-                $statYesterdayTotal += intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['max']) - intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['min']);
-                log::add('teleinfo', 'debug', 'Total conso --> ' . $statTodayTotal);
-            }
-            foreach ($statHcToCumul as $key => $value) {
-                $cmd            = cmd::byId($value);
-                $statHcMaxToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['max'];
-                $statHcMinToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['min'];
-                log::add('teleinfo', 'debug', 'Commande HC N°' . $value);
-                log::add('teleinfo', 'debug', ' ==> Valeur HC MAX : ' . $statHcMaxToday);
-                log::add('teleinfo', 'debug', ' ==> Valeur HC MIN : ' . $statHcMinToday);
-
-                $statTodayHc     += intval($statHcMaxToday) - intval($statHcMinToday);
-                $statYesterdayHc += intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['max']) - intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['min']);
-                log::add('teleinfo', 'debug', 'Total HC --> ' . $statTodayHc);
-            }
-            foreach ($statHpToCumul as $key => $value) {
-                $cmd            = cmd::byId($value);
-                $statHpMaxToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['max'];
-                $statHpMinToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['min'];
-                log::add('teleinfo', 'debug', 'Commande HP N°' . $value);
-                log::add('teleinfo', 'debug', ' ==> Valeur HP MAX : ' . $statHpMaxToday);
-                log::add('teleinfo', 'debug', ' ==> Valeur HP MIN : ' . $statHpMinToday);
-
-                $statTodayHp     += intval($statHpMaxToday) - intval($statHpMinToday);
-                $statYesterdayHp += intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['max']) - intval($cmd->getStatistique($startdateyesterday->format('Y-m-d 00:00:00'), $enddateyesterday)['min']);
-                log::add('teleinfo', 'debug', 'Total HP --> ' . $statTodayHp);
-            }
-
-            foreach ($statProdToCumul as $key => $value) {
-                $cmd              = cmd::byId($value);
-                $statProdMaxToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['max'];
-                $statProdMinToday = $cmd->getStatistique($startDateToday->format('Y-m-d 00:00:00'), $endDateToday->format('Y-m-d H:i:s'))['min'];
-                log::add('teleinfo', 'debug', 'Commande Production N°' . $value);
-                log::add('teleinfo', 'debug', ' ==> Valeur MAX : ' . $statProdMaxToday);
-                log::add('teleinfo', 'debug', ' ==> Valeur MIN : ' . $statProdMinToday);
-
-                $statTodayProd     += intval($statProdMaxToday) - intval($statProdMinToday);
-                log::add('teleinfo', 'debug', 'Total Production --> ' . $statTodayProd);
-            }
-
-            
             foreach ($eqLogic->getCmd('info') as $cmd) {
-                if ($cmd->getConfiguration('type') == "stat") {
-                    switch ($cmd->getConfiguration('info_conso')) {
-                        case "STAT_TODAY":
-                            if (intval($statTodayTotal)!=0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière STAT_TODAY 1 ==>', __FILE__) . ' ' . intval($statTodayTotal));
-								$cmd->event(intval($statTodayTotal));
-							}
-							else {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière STAT_TODAY 2 ==>', __FILE__) . ' ' . intval($statTodayIndex00));
-								$cmd->event(intval($statTodayIndex00));
-							}								
-                            break;
-                        case "STAT_TODAY_HP":
-                            log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' (HP) ==> ' . intval($statTodayHp));
-                            $cmd->event(intval($statTodayHp));
-                            break;
-                        case "STAT_TODAY_HC":
-                            log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' (HC) ==> ' . intval($statTodayHc));
-                            $cmd->event(intval($statTodayHc));
-                            break;
-                        case "STAT_TODAY_PROD":
-                            log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' (PROD) ==> ' . intval($statTodayProd));
-                            $cmd->event(intval($statTodayProd));
-                            break;
-                        case "STAT_TODAY_INDEX00":
-							//if ($statTodayIndex00 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 00 ==> ' . intval($statTodayIndex00));
-								$cmd->event(intval($statTodayIndex00));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX01":
-							//if ($statTodayIndex01 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 01 ==> ' . intval($statTodayIndex01));
-								$cmd->event(intval($statTodayIndex01));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX02":
-							//if ($statTodayIndex02 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 02 ==> ' . intval($statTodayIndex02));
-								$cmd->event(intval($statTodayIndex02));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX03":
-							//if ($statTodayIndex03 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 03 ==> ' . intval($statTodayIndex03));
-								$cmd->event(intval($statTodayIndex03));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX04":
-							//if ($statTodayIndex04 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 04 ==> ' . intval($statTodayIndex04));
-								$cmd->event(intval($statTodayIndex04));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX05":
-							//if ($statTodayIndex05 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 05 ==> ' . intval($statTodayIndex05));
-								$cmd->event(intval($statTodayIndex05));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX06":
-							//if ($statTodayIndex06 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 06 ==> ' . intval($statTodayIndex06));
-								$cmd->event(intval($statTodayIndex06));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX07":
-							//if ($statTodayIndex07 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 07 ==> ' . intval($statTodayIndex07));
-								$cmd->event(intval($statTodayIndex07));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX08":
-							//if ($statTodayIndex08 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 08 ==> ' . intval($statTodayIndex08));
-								$cmd->event(intval($statTodayIndex08));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX09":
-							//if ($statTodayIndex09 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 09 ==> ' . intval($statTodayIndex09));
-								$cmd->event(intval($statTodayIndex09));
-							//}
-							break;
-                        case "STAT_TODAY_INDEX10":
-							//if ($statTodayIndex10 > 0) {
-								log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' Index 10 ==> ' . intval($statTodayIndex10));
-								$cmd->event(intval($statTodayIndex10));
-							//}
-							break;
-                            case "STAT_TODAY_INDEX00_COUT":
-                                //if ($Coutindex00 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 00 ==> ' . round($Coutindex00,2));
-                                    $cmd->event(round($Coutindex00,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX01_COUT":
-                                //if ($Coutindex01 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 01 ==> ' . round($Coutindex01,2));
-                                    $cmd->event(round($Coutindex01,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX02_COUT":
-                                //if ($Coutindex02 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 02 ==> ' . round($Coutindex02,2));
-                                    $cmd->event(round($Coutindex02,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX03_COUT":
-                                //if ($Coutindex03 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 03 ==> ' . round($Coutindex03,2));
-                                    $cmd->event(round($Coutindex03,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX04_COUT":
-                                //if ($Coutindex04 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 04 ==> ' . round($Coutindex04,2));
-                                    $cmd->event(round($Coutindex04,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX05_COUT":
-                                //if ($Coutindex05 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 05 ==> ' . round($Coutindex05,2));
-                                    $cmd->event(round($Coutindex05,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX06_COUT":
-                                //if ($Coutindex06 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 06 ==> ' . round($Coutindex06,2));
-                                    $cmd->event(round($Coutindex06,2,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX07_COUT":
-                                //if ($Coutindex07 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 07 ==> ' . round($Coutindex07,2));
-                                    $cmd->event(round($Coutindex07,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX08_COUT":
-                                //if ($Coutindex08 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 08 ==> ' . round($Coutindex08,2));
-                                    $cmd->event(round($Coutindex08,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX09_COUT":
-                                //if ($Coutindex09 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 09 ==> ' . round($Coutindex09,2));
-                                    $cmd->event(round($Coutindex09,2));
-                                //}
-                                break;
-                            case "STAT_TODAY_INDEX10_COUT":
-                                //if ($Coutindex10 > 0) {
-                                    log::add('teleinfo', 'info', __('Mise à jour de la statistique journalière', __FILE__) . ' coût Index 10 ==> ' . round($Coutindex10,2));
-                                    $cmd->event(round($Coutindex10,2));
-                                //}
-                                break;
-                            case "TENDANCE_DAY":
-                            log::add('teleinfo', 'debug', 'Mise à jour de la tendance journalière ==> ' . '(Hier : ' . intval($statYesterdayHc + $statYesterdayHp) . ' Aujourd\'hui : ' . intval($statTodayHc + $statTodayHp) . ' Différence : ' . (intval($statYesterdayHc + $statYesterdayHp) - intval($statTodayHc + $statTodayHp)) . ')');
-                            $cmd->event(intval($statYesterdayHc + $statYesterdayHp) - intval($statTodayHc + $statTodayHp));
-                            break;
-                    }
+                if ($cmd->getConfiguration('type') != "stat") {
+                    continue;
+                }
+                
+                $infoConso = $cmd->getConfiguration('info_conso');
+                
+                switch ($infoConso) {
+                    case "STAT_TODAY":
+                        // Utilise le total si disponible, sinon index00
+                        if (intval($statTodayTotal) != 0) {
+                            log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY (total) ==> ' . intval($statTodayTotal) . ' Wh');
+                            $cmd->event(intval($statTodayTotal));
+                        } elseif ($hasIndex00direct) {
+                            if (intval($configuredIndexes[0]['conso']) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY (index00 direct) ==> ' . intval($configuredIndexes[0]['conso']) . ' Wh');
+                            $cmd->event(intval($configuredIndexes[0]['conso']));
+                        } else {
+                            if (intval($statTodayIndex00) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY (somme index) ==> ' . intval($statTodayIndex00) . ' Wh');
+                            $cmd->event(intval($statTodayIndex00));
+                        }
+                        break;
+                        
+                    case "STAT_TODAY_HP":
+                        if (intval($statTodayHp) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_HP ==> ' . intval($statTodayHp) . ' Wh');
+                        $cmd->event(intval($statTodayHp));
+                        break;
+                        
+                    case "STAT_TODAY_HC":
+                        if (intval($statTodayHc) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_HC ==> ' . intval($statTodayHc) . ' Wh');
+                        $cmd->event(intval($statTodayHc));
+                        break;
+                        
+                    case "STAT_TODAY_PROD":
+                        if (intval($statTodayProd) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_PROD ==> ' . intval($statTodayProd) . ' Wh');
+                        $cmd->event(intval($statTodayProd));
+                        break;
+                        
+                    case "STAT_TODAY_INDEX00":
+                        // priorité à BASE/EAST, sinon somme des index
+                        if ($hasIndex00direct && $configuredIndexes[0]['conso'] > 0) {
+                            if (intval($configuredIndexes[0]['conso']) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_INDEX00 (direct) ==> ' . intval($configuredIndexes[0]['conso']) . ' Wh');
+                            $cmd->event(intval($configuredIndexes[0]['conso']));
+                        } else {
+                            if (intval($statTodayIndex00) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_INDEX00 (cumul) ==> ' . intval($statTodayIndex00) . ' Wh');
+                            $cmd->event(intval($statTodayIndex00));
+                        }
+                        break;
+                        
+                    case "STAT_TODAY_INDEX00_COUT":
+                        if ($newIndex == 1) {
+                            if ($hasIndex00direct && $configuredIndexes[0]['cout'] > 0) {
+                                if (round($configuredIndexes[0]['cout'],2) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_INDEX00_COUT (direct) ==> ' . round($configuredIndexes[0]['cout'], 2) . ' €');
+                                $cmd->event(round($configuredIndexes[0]['cout'], 2));
+                            } else {
+                                if (intval($Coutindex00) != 0) log::add('teleinfo', 'info', 'Mise à jour STAT_TODAY_INDEX00_COUT (cumul) ==> ' . round($Coutindex00, 2) . ' €');
+                                $cmd->event(round($Coutindex00, 2));
+                            }
+                        }
+                        break;
+                        
+                    // Index 01-10
+                    case "STAT_TODAY_INDEX01":
+                    case "STAT_TODAY_INDEX02":
+                    case "STAT_TODAY_INDEX03":
+                    case "STAT_TODAY_INDEX04":
+                    case "STAT_TODAY_INDEX05":
+                    case "STAT_TODAY_INDEX06":
+                    case "STAT_TODAY_INDEX07":
+                    case "STAT_TODAY_INDEX08":
+                    case "STAT_TODAY_INDEX09":
+                    case "STAT_TODAY_INDEX10":
+                        if ($newIndex == 1) {
+                            $indexNum = intval(substr($infoConso, -2));
+                            if (isset($configuredIndexes[$indexNum])) {
+                                if (intval($configuredIndexes[$indexNum]['conso']) != 0) log::add('teleinfo', 'info', 'Mise à jour ' . $infoConso . ' ==> ' . intval($configuredIndexes[$indexNum]['conso']) . ' Wh');
+                                $cmd->event(intval($configuredIndexes[$indexNum]['conso']));
+                            }
+                        }
+                        break;
+                        
+                    // Coûts index 01-10
+                    case "STAT_TODAY_INDEX01_COUT":
+                    case "STAT_TODAY_INDEX02_COUT":
+                    case "STAT_TODAY_INDEX03_COUT":
+                    case "STAT_TODAY_INDEX04_COUT":
+                    case "STAT_TODAY_INDEX05_COUT":
+                    case "STAT_TODAY_INDEX06_COUT":
+                    case "STAT_TODAY_INDEX07_COUT":
+                    case "STAT_TODAY_INDEX08_COUT":
+                    case "STAT_TODAY_INDEX09_COUT":
+                    case "STAT_TODAY_INDEX10_COUT":
+                        if ($newIndex == 1) {
+                            $indexNum = intval(substr($infoConso, -7, 2));
+                            if (isset($configuredIndexes[$indexNum])) {
+                                if (round($configuredIndexes[$indexNum]['cout'], 2) != 0) log::add('teleinfo', 'info', 'Mise à jour ' . $infoConso . ' ==> ' . round($configuredIndexes[$indexNum]['cout'], 2) . ' €');
+                                $cmd->event(round($configuredIndexes[$indexNum]['cout'], 2));
+                            }
+                        }
+                        break;
+                        
+                    case "TENDANCE_DAY":
+                        $tendance = intval($todayValueForTendance) - intval($statYesterday);
+                        log::add('teleinfo', 'info', 'Mise à jour TENDANCE_DAY ==> ' . $tendance . ' Wh (Hier: ' . intval($statYesterday) . ', Aujourd\'hui: ' . intval($todayValueForTendance) . ')');
+                        $cmd->event($tendance);
+                        break;
                 }
             }
         }
-        log::add('teleinfo', 'info', '----------------------------------------------');
+        
+        log::add('teleinfo', 'info', '---------------------------------------------------------------');
     }
-
 
     public static function calculateOtherStats()
     {

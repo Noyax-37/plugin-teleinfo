@@ -13,6 +13,10 @@ Pour toutes demandes :
 
 Si vous souhaitez me payer un café par Paypal: [Offrir un café](https://www.paypal.com/donate/?hosted_button_id=JD64LAEUMUWMU)
 
+## 5.1.0
+- grosse mise à jour dans le calcul des statistiques, devrait normalement être transparent.
+- changement dans le calcul de la tendance 
+
 ## 5.0.0
 - création d'un template pour téléinfo
 - correction de petits bugs
