@@ -15,7 +15,11 @@ Si vous souhaitez me payer un café par Paypal: [Offrir un café](https://www.pa
 
 ## 5.1.0
 - grosse mise à jour dans le calcul des statistiques, devrait normalement être transparent.
+- grosse mise à jour dans la fonction de copie des index
+- grosse mise à jour dans la fonction de nettoyage
 - changement dans le calcul de la tendance 
+- révision de la sauvegarde et restauration des index
+- remise en service de la détection du type de trame téléinfo pour déteminer la vitesse du modem dans la configuration
 
 ## 5.0.0
 - création d'un template pour téléinfo

@@ -614,65 +614,51 @@ try {
         break;
         case 'restaureCmd':
             $return['erreur'] = 'nOk';
-            event::add('jeedom::alert', array(
-                'level' => 'warning',
-                'page' => 'teleinfo',
-                'message' => "envoi " . init('idRestaure') . ' vers id compteur ' . init('compteur') . ' du fichier ' . init('fichierRestaure'),
-            ));
-            $eqLogic = eqLogic::byId(init('compteur'));
-            if (!is_object($eqLogic)){
-            }
-            $cmd = $eqLogic->getCmd('info',init('idRestaure'));
-            if (!is_object($cmd)){
-                event::add('jeedom::alert', array(
-                    'level' => 'warning',
-                    'page' => 'teleinfo',
-                    'message' => __("Commande inexistante => création", __FILE__),
-                ));
-                $cmd = teleinfo::createCmdFromRest($eqLogic,init('idRestaure'));
-                event::add('jeedom::alert', array(
-                    'level' => 'warning',
-                    'page' => 'teleinfo',
-                    'message' => __("nouvelle commande créée =>", __FILE__) . ' ' . $cmd->getName(),
-                ));
+            $compteurId = init('compteur');
+            $idRestaure = init('idRestaure'); // C'est le nom de l'index (ex: BASE)
+            $fichier    = init('fichierRestaure');
+
+            $eqLogic = eqLogic::byId($compteurId);
+            if (!is_object($eqLogic)) {
+                throw new Exception(__('Équipement introuvable', __FILE__));
             }
 
-            event::add('jeedom::alert', array(
-                'level' => 'warning',
-                'page' => 'teleinfo',
-                'message' => __("Récupération des données du fichier", __FILE__) . ' ' . __DIR__ . '/../../sauvegarde/' . init('fichierRestaure'),
-            ));
+            // Récupération ou création de la commande de destination
+            $cmd = $eqLogic->getCmd('info', $idRestaure);
+            if (!is_object($cmd)) {
+                $cmd = teleinfo::createCmdFromRest($eqLogic, $idRestaure);
+            }
 
-            if (($fichier = fopen(__DIR__ . '/../../sauvegarde/' . init('fichierRestaure'), 'r')) != FALSE){
-                event::add('jeedom::alert', array(
-                    'level' => 'warning',
-                    'page' => 'teleinfo',
-                    'message' => __("Restauration de l'historique de l'index", __FILE__) . ' ' . $cmd->getName(),
-                ));
-                $i=0;
-                while (($donnees = fgetcsv($fichier, 1000, ",")) !== FALSE) {
-                    $i+=1;
-                    if ($i<3){
-                        event::add('jeedom::alert', array(
-                            'level' => 'warning',
-                            'page' => 'teleinfo',
-                            'message' => __("getcsv ligne". $i . ' date = ' . $donnees[1] . ', valeur = ' . $donnees[2], __FILE__),
-                        ));
-                    }
-                    if ($i!= 1){
-                        $sql = "REPLACE INTO historyArch SET cmd_id=:cmdId,datetime=:newDatetime,value=:newValue";
-                        $values = array(
-                            'cmdId' => $cmd->getId(),
-                            'newDatetime' => date('Y-m-d H:00:00', strtotime($donnees[1])),
-                            'newValue' => floatval($donnees[2]),
-                        );
-                        $replaceValues = DB::Prepare($sql, $values, DB::FETCH_TYPE_ROW);
+            $filePath = __DIR__ . '/../../sauvegarde/' . $fichier;
+            if (!file_exists($filePath)) {
+                throw new Exception(__('Fichier de sauvegarde introuvable', __FILE__));
+            }
+
+            // Lecture du CSV et préparation de l'injection
+            $dataToImport = [];
+            if (($handle = fopen($filePath, "r")) !== FALSE) {
+                $header = fgetcsv($handle, 1000, ","); // On saute l'en-tête (cmd_id, datetime, value)
+                
+                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    if (isset($data[1]) && isset($data[2])) {
+                        $dataToImport[] = [
+                            'cmd_id'   => $cmd->getId(), // On force le NOUVEL ID de commande
+                            'datetime' => $data[1],
+                            'value'    => $data[2]
+                        ];
                     }
                 }
+                fclose($handle);
+            }
+
+            if (!empty($dataToImport)) {
+                // On utilise la méthode de masse
+                teleinfo::bulkInsertHistory($dataToImport);
                 $return['erreur'] = 'ok';
             }
+
             ajax::success($return);
-        break;
+            break;
 
     }
     throw new \Exception(__('Aucune methode correspondante', __FILE__));

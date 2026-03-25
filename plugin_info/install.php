@@ -172,7 +172,7 @@ function teleinfo_update($direct=true) {
         $cron->setFunction('calculateOtherStats');
         $cron->setEnable(1);
         $cron->setDeamon(0);
-        $cron->setSchedule('10 00 * * *');
+        $cron->setSchedule('07 00 * * *');
         $cron->save();
     }
     $cron->stop();
@@ -196,7 +196,7 @@ function teleinfo_update($direct=true) {
         $cronclean->setFunction('cleanDBTeleinfo');
         $cronclean->setEnable(1);
         $cronclean->setDeamon(0);
-        $cronclean->setSchedule('25 0 * * 1');
+        $cronclean->setSchedule('23 0 * * 1');
         $cronclean->save();
     }
     $cronclean->stop();
