@@ -36,8 +36,17 @@ class Teleinfo:
     """ Fetch teleinformation datas and call user callback
     each time all data are collected
     """
+
+    # Intervalle minimum (en secondes) entre deux envois forces d'un champ
+    # de puissance instantanee (SINST*/PAPP) meme si sa valeur n'a pas change.
+    # Decouple volontairement cet envoi force de cycle_sommeil (qui pilote la
+    # lecture serie / vidage du buffer et doit pouvoir rester bas) pour eviter
+    # de generer un envoi vers Jeedom a chaque iteration de boucle.
+    FORCE_SEND_INTERVAL = 2
+
     def __init__(self):
         logging.debug("MODEM------INIT CONNECTION")
+        self.last_forced_send = {}
 
     @staticmethod
     def close():
@@ -436,9 +445,21 @@ class Teleinfo:
             _SendData = {}
             pending_changes = False
             raz_calcul = datetime.now() - raz_time
+            now = datetime.now()
             for cle, valeur in data.items():
                 if cle in data_temp:
-                    if ((data[cle] != data_temp[cle]) or (cle[:5] == 'SINST') or (cle == 'PAPP') or (raz_calcul.seconds > 55)): # si la valeur a changé ou si c'est une puissance instantanée ou si plus de 55 secondes depuis le dernier envoi on envoie
+                    # Champs de puissance instantanee : on force un envoi meme
+                    # sans changement de valeur, mais throttle a FORCE_SEND_INTERVAL
+                    # secondes pour ne pas coupler ce forcage a cycle_sommeil
+                    # (qui doit pouvoir rester bas pour la lecture serie).
+                    is_power_field = (cle[:5] == 'SINST') or (cle == 'PAPP')
+                    force_due_to_interval = is_power_field and (
+                        cle not in self.last_forced_send
+                        or (now - self.last_forced_send[cle]).total_seconds() >= self.FORCE_SEND_INTERVAL
+                    )
+                    if ((data[cle] != data_temp[cle]) or force_due_to_interval or (raz_calcul.seconds > 55)):
+                        if force_due_to_interval:
+                            self.last_forced_send[cle] = now
                         if cle[:3] == 'EAS' or cle[:3] == 'EAI':                     # test si on a affaire à un index commençant par EAI ou EAS (EAIT, EASF??, ...)
                             if (int(data[cle]) > int(data_temp[cle])) and (int(data[cle]) < (int(data_temp[cle]) + 10000)):    #s i la valeur relevée est plus grande que celle en mémoire et qu'elle n'est pas 10 kwh au dessus c'est ok
                                 _SendData[cle] = valeur

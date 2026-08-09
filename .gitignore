@@ -20,3 +20,5 @@ resources/venv/
 core/i18n/*.json
 
 sauvegarde/
+
+core/i18n/

@@ -13,6 +13,14 @@ Pour toutes demandes :
 
 Si vous souhaitez me payer un café par Paypal: [Offrir un café](https://www.paypal.com/donate/?hosted_button_id=JD64LAEUMUWMU)
 
+## 5.1.1
+- Charge système excessive avec un `cycle_sommeil` bas (mode standard)**
+  Les champs de puissance instantanée (`SINSTI`, `SINSTS`, `PAPP`) étaient renvoyés vers Jeedom à chaque itération de la boucle principale, indépendamment de tout changement de valeur. Combiné à un `cycle_sommeil` bas (ex: 0.3s), ce comportement pouvait générer plusieurs centaines de mises à jour par seconde côté Jeedom, causant une charge CPU/DB anormalement élevée sur certaines installations (notamment en mode Linky standard).
+
+  L'envoi "forcé" de ces champs (pour garder un affichage temps réel même sans changement de valeur) est désormais limité à une fois toutes les 2 secondes par champ, indépendamment de `cycle_sommeil` qui continue de piloter uniquement la fréquence de lecture du buffer série.
+
+  Si vous avez configuré (ou non) un `cycle_sommeil` très bas et observiez une charge système élevée sur votre Jeedom, cette mise à jour devrait corriger le problème sans nécessiter de modification de votre configuration.
+
 ## 5.1.0
 - grosse mise à jour dans le calcul des statistiques, devrait normalement être transparent.
 - grosse mise à jour dans la fonction de copie des index
